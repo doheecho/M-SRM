@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SCM Map</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <style>
+        :root { --samsung-blue: #1428A0; --bg-color: #f4f7f9; --header-bg-color: #f8f9fa; }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        body { display: flex; flex-direction: column; background-color: var(--bg-color); font-family: 'Noto Sans KR', sans-serif; }
+        
+        .main-content { flex-grow: 1; padding: 0 20px 20px; display: flex; flex-direction: column; overflow: hidden; }
+        .card-custom { width: 100%; height: 100%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e1e4e8; display: flex; flex-direction: column; overflow: hidden; }       
+        
+        /* Layout optimized for perfect alignment and matched height across grouped panes */
+        .main-container {
+            display: flex; flex-direction: column;
+            gap: 15px; flex-grow: 1; min-height: 0; padding: 15px;
+        }
+        .top-row {
+            display: grid; grid-template-columns: 3fr 2fr;
+            gap: 15px; flex-shrink: 0;
+        }
+        
+        .column {
+            display: flex; flex-direction: column; background: white; 
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden; border: 1px solid #e0e0e0; min-height: 0;
+        }
+        
+        .section-header { padding: 12px 15px; background: #fdfdfd; flex-shrink: 0; }
+        .section-main { flex-grow: 1; overflow: auto; padding: 0 15px 15px 15px; min-height: 0; }
+        .section-footer { padding: 10px 15px; border-top: 1px solid #eee; background: #fdfdfd; display: flex; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
+        
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .filter-group .group-title, .map-section-title { 
+            font-weight: 700; 
+            font-size: 0.95rem; 
+            color: #333; 
+            margin-bottom: 8px; 
+            border-bottom: 2px solid var(--samsung-blue); 
+            display: inline-block; 
+            padding-bottom: 3px; 
+            align-self: flex-start;
+        }
+        .list-box { height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; }
+        .list-item { display: block; padding: 4px 8px; color: #444; text-decoration: none; border-bottom: 1px solid #f0f0f0; font-size: 0.75rem; }
+        .list-item:hover { background: #f0f0f0; }
+        .list-item.active { background: var(--samsung-blue); color: white; }
+        .search-input { font-size: 0.75rem; padding: 2px 4px; }
+        
+        .risk-theme-btn, .custom-btn-group .btn, #clear-filters-btn { 
+            font-size: 0.75rem !important; 
+            padding: 2px 8px !important; 
+            line-height: 1.4 !important;
+            min-height: 0 !important;
+        }
+        .risk-box { display: flex; flex-wrap: wrap; gap: 6px; }
+        
+        .table-title-wrapper, .map-title-wrapper { display: flex; align-items: baseline; gap: 8px; padding: 5px 15px 10px 15px; }
+        .table-title, .map-title { font-weight: 700; font-size: 1.1rem; color: #333; margin: 0; }
+        .table-title-desc { font-size: 0.75rem; color: #888; }
+        .table-responsive { height: 100%; border: 1px solid #e0e0e0; border-radius: 6px; overflow: auto; background: white; }
+        .table { font-size: 0.8rem; border-collapse: separate; border-spacing: 0; width: 100%; margin-bottom: 0; white-space: nowrap; }
+        .table th { 
+            position: sticky; top: 0; 
+            background-color: var(--header-bg-color) !important; 
+            z-index: 10; font-weight: 700; 
+            text-align: center !important; 
+            vertical-align: middle; 
+            border: 1px solid #f0f0f0;
+            border-top: none;
+            user-select: none;
+        }
+        .table td { 
+            white-space: nowrap; 
+            padding: 0.25rem 0.5rem !important; 
+            border: 1px solid #f0f0f0; 
+            vertical-align: middle; 
+        }
+        .table-hover tbody tr:hover td { background-color: #f1f4ff !important; cursor: pointer; }
+        .text-center-data { text-align: center; }
+        
+        #map { width: 100%; height: 100%; }
+        .leaflet-tooltip { padding: 2px 6px !important; background-color: rgba(255, 255, 255, 0.85) !important; border-color: rgba(0, 0, 0, 0.5) !important; }
+        
+        /* Prevent Leaflet controls and minimap from overlapping header dropdowns/menus */
+        .leaflet-top, .leaflet-bottom { z-index: 990 !important; }
+        
+        .custom-div-icon { 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 9px; 
+            border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            color: #1428A0; background: #FFFF00; border: 1.5px solid #1428A0; 
+        }
+        #map-type-group.custom-btn-group .btn { flex-grow: 1; text-align: center; }
+        #marker-color-group.custom-btn-group .btn { width: 60px; }
+        #loading-overlay { position: fixed; top: 50px; left: 0; width: 100%; height: calc(100% - 50px); background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+
+        /* 상세 정보 모달 테이블 스타일 - 서식 완전 통일 및 100% 가득 찬 너비로 flex 좌측에 밀착 */
+        .partner-detail-table {
+            font-size: 0.81rem !important;
+            width: 100% !important; 
+            table-layout: fixed;
+            border-collapse: collapse;
+            border: 1px solid #dee2e6;
+        }
+        .partner-detail-table td, .partner-detail-table th {
+            padding: 6px 10px !important;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+            height: 34px;
+        }
+        /* 제목 셀 너비 17.5% 고정 (기존 대비 80% 너비 축소 완벽 대응) */
+        .partner-detail-table td.partner-detail-label {
+            width: 17.5% !important;
+            background-color: #f1f3f5 !important;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+        }
+        /* 내용 셀 너비 32.5% 유동 */
+        .partner-detail-table td:not(.partner-detail-label) {
+            width: 32.5% !important;
+        }
+        /* 연도/금액 사이 가로 경계 테두리 제거용 특수 스타일 */
+        .no-border-bottom td {
+            border-bottom: none !important;
+        }
+        .no-border-top td {
+            border-top: none !important;
+        }
+
+        /* 3분할 비대칭 그리드 레이아웃 (좌측 표 3/5=54% 축소 수립, 우측 지도/차트 2/5=46% 유지) */
+        .partner-modal-row {
+            display: flex;
+            align-items: stretch; /* 좌측 표의 높이에 우측 미디어가 칼같이 자동 동기화 정렬됨 */
+            gap: 24px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .partner-modal-row-left {
+            width: calc(54% - 12px) !important; /* 54% 너비 정밀 축소 */
+            flex: 0 0 calc(54% - 12px) !important;
+            min-width: 0;
+        }
+        .partner-modal-row-right {
+            width: calc(46% - 12px) !important; /* 46% 넓은 지도/차트 가로 폭 수호 */
+            flex: 0 0 calc(46% - 12px) !important;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 불투명 흰색 활성 버튼 스타일 - 주소가 존재하는 공장 버튼용 (선택되지 않았을 때) */
+        .btn-map-active:not(.btn-primary) {
+            background-color: #ffffff !important; /* Solid white background */
+            border-color: #009de0 !important; /* Nice sky blue border */
+            color: #009de0 !important; /* Sky blue text */
+            opacity: 1 !important; /* Fully opaque */
+        }
+        .btn-map-active:not(.btn-primary):hover {
+            background-color: rgba(0, 157, 224, 0.08) !important; /* Light sky blue hover background */
+            color: var(--samsung-blue) !important;
+        }
+    </style>
+</head>
+<body>
+    <?!= include('header'); ?>
+    
+    <div id="loading-overlay">
+        <div class="spinner-border text-primary" role="status"></div>
+        <span class="ms-3 fw-bold">SCM Map 생성 중...</span>
+    </div>
+    
+    <main class="main-content">
+        <div class="card-custom">
+            <div class="main-container">
+                <!-- Top Row: Filters (left) and Risk theme (right) as separate boxes -->
+                <div class="top-row">
+                    <div class="column" style="padding: 12px 15px;">
+                        <div id="filter-panel-left" class="filter-grid"></div>
+                    </div>
+                    <div class="column" style="padding: 12px 15px; display: flex; flex-direction: column;">
+                        <div class="map-section-title">Risk 테마 분석</div>
+                        <div id="risk-theme-panel" class="risk-box"></div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Row: Table and Map unified in a single white results box -->
+                <div class="column" style="flex-grow: 1; display: flex; flex-direction: column; min-height: 0;">
+                    <!-- Inner grid area (excluding footer for single bottom bar layout) -->
+                    <div class="bottom-unified-grid" style="display: grid; grid-template-columns: 3fr 2fr; gap: 15px; flex-grow: 1; min-height: 0; padding: 15px 15px 0 15px; box-sizing: border-box;">
+                        
+                        <!-- Left Side of Unified Card: Table -->
+                        <div style="display: flex; flex-direction: column; min-height: 0; height: 100%;">
+                            <div class="table-title-wrapper" style="padding: 0 0 10px 0; flex-shrink: 0;">
+                              <div class="table-title">하위 공급망 리스트</div>
+                              <div class="table-title-desc">(더블클릭시 해당 Site 생산자재 상세내역 확인)</div>
+                            </div>
+                            <div style="flex-grow: 1; overflow: auto; min-height: 0; margin-bottom: 10px;">
+                                <div class="table-responsive" style="height: 100%;">
+                                    <table class="table table-hover table-sm">
+                                        <thead id="table-head"></thead>
+                                        <tbody id="table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Side of Unified Card: Map -->
+                        <div style="display: flex; flex-direction: column; min-height: 0; height: 100%;">
+                            <div class="map-title-wrapper" style="padding: 0 0 10px 0; flex-shrink: 0;">
+                                <div class="map-title">Map</div>
+                            </div>
+                            <div style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; margin-bottom: 10px; border: 1px solid #dee2e6; border-radius: 6px;">
+                                <div id="map" style="flex-grow: 1; height: 100%;"></div>
+                                <div id="main-address-display" class="px-3 py-2 bg-white border-top text-dark fw-bold" style="font-size: 0.81rem; display: none; text-align: left;">주소 : </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                    <!-- Unified Bottom Bar across the entire results card (reorganized from left to right) -->
+                    <div class="section-footer justify-content-between" style="border-top: 1px solid #eee; padding: 10px 15px; background: #fdfdfd; flex-shrink: 0; border-radius: 0 0 12px 12px; display: flex; align-items: center;">
+                        <!-- Left Aligned Group: 검색조건, 지도타입, 표식 색상 변경, 지도위에 협력사 Label 표기 -->
+                        <div class="d-flex align-items-center gap-4 flex-wrap">
+                            <!-- 1. 검색조건 -->
+                            <div class="d-flex align-items-center">
+                                <span class="fw-bold me-2" style="font-size: 0.75rem;">검색조건:</span>
+                                <div id="logic-btn-group" class="d-flex gap-2 custom-btn-group" role="group">
+                                    <button type="button" class="btn btn-primary" data-value="AND">교집합(AND)</button>
+                                    <button type="button" class="btn btn-outline-primary" data-value="OR">합집합(OR)</button>
+                                </div>
+                            </div>
+
+                            <!-- 2. 지도타입 -->
+                            <div class="d-flex align-items-center">
+                                <span class="fw-bold me-2" style="font-size: 0.75rem;">지도타입:</span>
+                                <div id="map-type-group" class="d-flex gap-2 custom-btn-group" role="group">
+                                    <button type="button" class="btn btn-dark" data-layer="일반">일반</button>
+                                    <button type="button" class="btn btn-outline-dark" data-layer="위성">위성</button>
+                                    <button type="button" class="btn btn-outline-dark" data-layer="지형">지형</button>
+                                    <button type="button" class="btn btn-outline-dark" data-layer="Google 일반">Google 일반</button>
+                                    <button type="button" class="btn btn-outline-dark" data-layer="Google 위성">Google 위성</button>
+                                </div>
+                            </div>
+
+                            <!-- 3. 표식 색상 변경 -->
+                            <div class="d-flex align-items-center">
+                                <span class="fw-bold me-2" style="font-size: 0.75rem;">표식 색상 변경:</span>
+                                <div id="marker-color-group" class="d-flex gap-2 custom-btn-group" role="group">
+                                    <button type="button" class="btn btn-primary" data-color="#FFFF00">노란색</button>
+                                    <button type="button" class="btn btn-outline-primary" data-color="#FFFFFF">흰색</button>
+                                    <button type="button" class="btn btn-outline-primary" data-color="#1428A0">파란색</button>
+                                    <button type="button" class="btn btn-outline-primary" data-color="#DC3545">빨간색</button>
+                                    <button type="button" class="btn btn-outline-primary" data-color="#000000">검정색</button>
+                                </div>
+                            </div>
+
+                            <!-- 4. 지도위에 협력사 Label 표기 -->
+                            <div class="d-flex align-items-center">
+                                <span class="fw-bold me-2" style="font-size: 0.75rem;">지도위에 협력사 Label 표기:</span>
+                                <div id="label-btn-group" class="d-flex gap-2 custom-btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-success" data-action="show">라벨표기</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-action="hide">라벨미표기</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Aligned Group: 조회결과, 필터 초기화 -->
+                        <div class="d-flex align-items-center gap-3">
+                            <span id="result-label" class="badge bg-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">조회 결과: 0개</span>
+                            <button id="clear-filters-btn" class="btn btn-outline-danger btn-sm">필터 초기화</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: var(--samsung-blue); color: white;">
+                    <h5 class="modal-title fw-bold" id="detailModalLabel">세부현황</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="detail-address-display" class="mb-2 fw-bold text-dark" style="font-size: 0.81rem; display: none; text-align: left;">주소 : </div>
+                    <div id="detail-loading" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="mt-2 fw-bold text-secondary">데이터를 불러오는 중입니다...</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover table-sm text-center" id="detail-table">
+                            <thead id="detail-table-head" class="table-light"></thead>
+                            <tbody id="detail-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between d-flex align-items-center" style="padding: 0.75rem 1rem;">
+                    <span id="detail-result-label" class="badge bg-dark d-inline-flex align-items-center justify-content-center" 
+                          style="font-size: 0.9rem; font-weight: 500; padding: 6px 12px; height: 28px; line-height: 1; border-radius: 4px;">
+                        조회 결과 : 0종
+                    </span>
+                    
+                    <button type="button" class="btn btn-secondary d-inline-flex align-items-center justify-content-center" data-bs-dismiss="modal" 
+                            style="font-size: 0.9rem; font-weight: 500; padding: 6px 16px; height: 28px; line-height: 1; border-radius: 4px; min-height: 0;">
+                        닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 상세 조회 모달 팝업 영역 (가로너비 80% 축소급 74vw 및 3/5, 2/5 연동 레이아웃) -->
+    <div class="modal fade" id="partnerDetailModal" tabindex="-1" aria-labelledby="partnerDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 74vw !important; width: 74vw !important;">
+            <div class="modal-content" style="border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); border: none;">
+                <div class="modal-header d-flex align-items-center justify-content-between" style="background-color: var(--samsung-blue); color: #ffffff; border-top-left-radius: 12px; border-top-right-radius: 12px; padding: 15px 25px;">
+                    <h5 class="modal-title fw-bold" id="partnerDetailModalLabel">협력사 정보</h5>
+                    <button type="button" class="btn-close btn-close-white m-0" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" style="background-color: #fdfefe; max-height: 88vh; overflow-y: auto;">
+                    
+                    <!-- 1. 기본정보 핵심 지정 필드 캡처 (0-based COLUMN_MAPPING 인덱스 정밀 수치 매핑) -->
+                    <h6 style="color: var(--samsung-blue); font-weight: 800; font-size: 1.15rem; margin-bottom: 12px; margin-left: 2px;">■ 협력사 기본정보</h6>
+                    <div class="partner-modal-row" style="height: 400px !important;">
+                        <div class="partner-modal-row-left" style="height: 100%;">
+                            <div class="table-responsive" style="border-radius: 6px; overflow-y: auto; border: none; height: 100%;">
+                                <table class="table partner-detail-table mb-0">
+                                    <tbody id="partner-detail-tbody">
+                                        <!-- JS에서 동적으로 삽입 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="partner-modal-row-right" style="position: relative; height: 100%;">
+                            <!-- 지도 위치 선택 버튼 그룹 -->
+                            <div id="map-location-btn-group" class="btn-group btn-group-sm position-absolute" style="top: 10px; right: 10px; z-index: 105; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                                <button type="button" id="btn-map-head" class="btn btn-primary fw-bold btn-map-active" onclick="switchMapLocation('head')">본사</button>
+                                <button type="button" id="btn-map-factory1" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory1')">공장1</button>
+                                <button type="button" id="btn-map-factory2" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory2')">공장2</button>
+                                <button type="button" id="btn-map-factory3" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory3')">공장3</button>
+                                <button type="button" id="btn-map-factory4" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory4')">공장4</button>
+                            </div>
+                            <div id="partner-map-container" style="flex-grow: 1; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.03); height: 100%;">
+                                <!-- iframe 지도 삽입 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 거래정보 섹션 (높이를 290px 로 고정 제어하여 Chart.js 무한 루프 팽창 버그 차단) -->
+                    <h6 style="color: var(--samsung-blue); font-weight: 800; font-size: 1.15rem; margin-top: 20px; margin-bottom: 12px; margin-left: 2px; display: flex; align-items: baseline;">
+                        ■ 협력사 거래정보
+                        <span style="font-size: 0.81rem; color: #888; font-weight: normal; margin-left: 8px;">(백만원)</span>
+                    </h6>
+                    <div class="partner-modal-row" style="height: 290px !important;">
+                        <div class="partner-modal-row-left" style="height: 100%;">
+                            <div class="table-responsive" style="border-radius: 6px; overflow-y: auto; border: none; height: 100%;">
+                                <table class="table partner-detail-table mb-0 text-center" style="vertical-align: middle;" id="partner-purchase-table">
+                                    <!-- 연도 및 금액 6열 동적 조립 삽입 -->
+                                </table>
+                            </div>
+                        </div>
+                        <div class="partner-modal-row-right" style="height: 100%;">
+                            <div id="partner-chart-container" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); display: flex; flex-direction: column; height: 100%;">
+                                <canvas id="partner-trend-chart" style="width: 100%; height: 100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 재무정보 섹션 (높이를 340px 로 고정 제어) -->
+                    <h6 style="color: var(--samsung-blue); font-weight: 800; font-size: 1.15rem; margin-top: 20px; margin-bottom: 12px; margin-left: 2px; display: flex; align-items: baseline;">
+                        ■ 협력사 재무정보
+                        <span style="font-size: 0.81rem; color: #888; font-weight: normal; margin-left: 8px;">(백만원)</span>
+                    </h6>
+                    <div class="partner-modal-row" style="margin-bottom: 0; height: 340px !important;">
+                        <div class="partner-modal-row-left" style="height: 100%;">
+                            <div class="table-responsive" style="border-radius: 6px; overflow-y: auto; border: none; height: 100%;">
+                                <table class="table partner-detail-table mb-0 text-center" style="vertical-align: middle;" id="partner-finance-table">
+                                    <!-- 매출액, 영업이익, 당기순이익, 이익잉여금 6열 동적 조립 삽입 -->
+                                </table>
+                            </div>
+                        </div>
+                        <div class="partner-modal-row-right" style="height: 100%;">
+                            <!-- 공란 -->
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer" style="background-color: #f8f9fa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: 12px 25px; display: flex; align-items: center; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary fw-bold px-4 py-2" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const initialPageData = <?!= initialPageDataString ?>;
+        let allData, columnMapping, treeviewColumns, map, markersLayer, countryCodeMap;
+        let mapLayers = {}, currentLayerName = '일반';
+        let detailModalInstance; 
+        let partnerChartInstance = null; // 상세조회 모달 내부 그래프 인스턴스 전역 관리 
+        let currentSort = { key: null, direction: 'asc' }; // Sorting state management
+        
+        // Overview world minimap features (소형 축소지도 레이어 전역 독립 관리)
+        let miniMap = null;
+        let miniFilteredDotsLayer = null; // Layer group to hold the small yellow pinpoint dots for all filtered factories
+        let miniBoundsRect = null;       // Yellow dashed bounds rectangle on minimap showing geographic SCM scope
+        let miniHighlightMarker = null;  // Large yellow circle marker to highlight clicked company on the minimap
+        let rect = null;                 // Viewport bounds rectangle synced with main map
+        
+        function getVendorType(vendorCode) {
+            const codeB = String(vendorCode || '').trim();
+            if (!codeB || codeB === '-' || codeB === '미분류') return null;
+            
+            const regList = (initialPageData.vendorCodeTypes && initialPageData.vendorCodeTypes.regular) || [];
+            const ipcList = (initialPageData.vendorCodeTypes && initialPageData.vendorCodeTypes.ipc) || [];
+            
+            function isCodeMatched(codeA, strB) {
+                const strA = String(codeA || '').trim();
+                if (!strA || !strB) return false;
+                if (strA.toLowerCase() === strB.toLowerCase()) return true;
+                
+                const numA = parseInt(strA, 10);
+                const numB = parseInt(strB, 10);
+                if (!isNaN(numA) && !isNaN(numB) && numA === numB) {
+                    return true;
+                }
+                return false;
+            }
+            
+            if (regList.some(codeA => isCodeMatched(codeA, codeB))) {
+                return 'regular';
+            }
+            if (ipcList.some(codeA => isCodeMatched(codeA, codeB))) {
+                return 'ipc';
+            }
+            return null;
+        }
+
+        const dom = {
+            filterPanelLeft: document.getElementById('filter-panel-left'),
+            riskThemePanel: document.getElementById('risk-theme-panel'),
+            tableHead: document.getElementById('table-head'),
+            tableBody: document.getElementById('table-body'),
+            resultLabel: document.getElementById('result-label'),
+            clearFiltersBtn: document.getElementById('clear-filters-btn'),
+            logicBtnGroup: document.getElementById('logic-btn-group'),
+            labelBtnGroup: document.getElementById('label-btn-group'),
+            mapTypeGroup: document.getElementById('map-type-group'),
+            markerColorGroup: document.getElementById('marker-color-group'),
+            loader: document.getElementById('loading-overlay')
+        };
+        
+        const MARKER_COLOR_STYLES = {
+            '#FFFF00': { bg: '#FFFF00', border: '#1428A0', font: '#1428A0' },
+            '#FFFFFF': { bg: '#FFFFFF', border: '#000000', font: '#000000' },
+            '#1428A0': { bg: '#1428A0', border: '#FFFF00', font: '#FFFF00' },
+            '#DC3545': { bg: '#DC3545', border: '#FFFF00', font: '#FFFF00' },
+            '#000000': { bg: '#000000', border: '#FFFFFF', font: '#FFFFFF' }
+        };
+
+        function initialize() {
+            if (typeof renderHeaderUI === 'function') {
+                renderHeaderUI(initialPageData ? initialPageData.userEmail : '', "SCM Map");
+            }
+            
+            detailModalInstance = new bootstrap.Modal(document.getElementById('detailModal'));
+            
+            if (!initialPageData || !initialPageData.success) {
+                if (dom.loader) dom.loader.style.display = 'none';
+                alert("데이터 로딩 실패: " + (initialPageData ? initialPageData.message : "알 수 없는 오류"));
+                return;
+            }
+            allData = initialPageData.allData;
+            columnMapping = initialPageData.columnMapping;
+            treeviewColumns = ["국가", "도시", "협력사", "Site명", "품목", "품목군", "생산유형"]; // Modified to include both 협력사 and Site명
+            countryCodeMap = initialPageData.countryCodeMap;
+            
+            setupMap();
+            renderFilters(initialPageData.filters);
+            renderRiskThemes(initialPageData.riskThemes);
+            renderTable(allData);
+            addEventListeners();
+            
+            setTimeout(function() {
+                if (dom.loader) {
+                    dom.loader.style.transition = "opacity 0.5s";
+                    dom.loader.style.opacity = "0";
+                    setTimeout(() => dom.loader.style.display = 'none', 500);
+                }
+            }, 3000);
+        }
+        
+        function showDetailPopup(country, city, vendor, address) {
+            const countryName = countryCodeMap[country.toUpperCase()] || country;
+            
+            const titleElement = document.getElementById('detailModalLabel');
+            titleElement.textContent = '해당 Site 생산자재 ';
+            const detailSpan = document.createElement('span');
+            detailSpan.style.color = '#cde6ff';
+            detailSpan.textContent = `- ${vendor} (${countryName}, ${city})`;
+            
+            titleElement.appendChild(detailSpan);
+            
+            const addrDisplay = document.getElementById('detail-address-display');
+            if (address && address !== '-') {
+                addrDisplay.textContent = `주소 : ${address}`;
+                addrDisplay.style.display = 'block';
+            } else {
+                addrDisplay.style.display = 'none';
+            }
+            
+            document.getElementById('detail-table-head').innerHTML = '';
+            document.getElementById('detail-table-body').innerHTML = '';
+            document.getElementById('detail-loading').style.display = 'block';
+            document.getElementById('detail-table').style.display = 'none';
+            
+            detailModalInstance.show();
+            
+            google.script.run.withSuccessHandler(function(response) {
+                document.getElementById('detail-loading').style.display = 'none';
+                document.getElementById('detail-table').style.display = 'table';
+                
+                const resultLabel = document.getElementById('detail-result-label');
+                if (response.success) {
+                    resultLabel.textContent = `조회 결과 : ${response.data.length}종`;
+                    
+                    if (response.data.length === 0) {
+                        document.getElementById('detail-table-body').innerHTML = '<tr><td colspan="12" class="text-muted py-3">해당 조건에 맞는 자재 데이터가 없습니다.</td></tr>';
+                        return;
+                    }
+                    
+                    document.getElementById('detail-table-head').innerHTML = `<tr>${response.headers.map(h => `<th class="bg-light">${h}</th>`).join('')}</tr>`;
+                    document.getElementById('detail-table-body').innerHTML = response.data.map(row =>
+                        `<tr>${row.map(cell => {
+                            const escapedCell = String(cell || '').replace(/"/g, '&quot;');
+                            return `<td title="${escapedCell}">${cell || ''}</td>`;
+                        }).join('')}</tr>`
+                    ).join('');
+                    
+                } else {
+                    resultLabel.textContent = '조회 결과 : 0종';
+                    document.getElementById('detail-table-body').innerHTML = `<tr><td colspan="12" class="text-danger py-3">오류 발생: ${response.message}</td></tr>`;
+                }
+            }).withFailureHandler(function(err) {
+                document.getElementById('detail-loading').style.display = 'none';
+                document.getElementById('detail-table').style.display = 'table';
+                document.getElementById('detail-result-label').textContent = '오류 발생';
+                document.getElementById('detail-table-body').innerHTML = `<tr><td colspan="12" class="text-danger py-3">스크립 실행 오류: ${err.message}</td></tr>`;
+            }).getDetailData(country, city, vendor);
+        }
+
+        function setupMap() {
+            map = L.map('map').setView([36, 127], 5);
+            mapLayers = {
+                '일반': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }),
+                '위성': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' }),
+                '지형': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopo' }),
+                'Google 일반': L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{ maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'], attribution: '© Google' }),
+                'Google 위성': L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{ maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'], attribution: '© Google' })
+            };
+            mapLayers[currentLayerName].addTo(map);
+            markersLayer = L.layerGroup().addTo(map);
+
+            // NATIVE WORLD OVERVIEW MAP (MINIMAP) IMPLEMENTATION - TOP RIGHT CORNER
+            // Aspect ratio expanded to exactly 1:2.6 (260px wide, 100px high) to show the entire globe from Alaska to Siberia
+            L.Control.OverviewMap = L.Control.extend({
+                options: { position: 'topright' },
+                onAdd: function (map) {
+                    const container = L.DomUtil.create('div', 'leaflet-control-overview');
+                    container.style.width = '260px'; // Expanded to 260px (1:2.6 aspect ratio!)
+                    container.style.height = '100px';
+                    container.style.background = 'white';
+                    container.style.border = '2.5px solid #333333'; // Thick, dark border separating minimap from map
+                    container.style.borderRadius = '8px';
+                    container.style.boxShadow = '0 3px 12px rgba(0,0,0,0.3)'; // Stronger contrast drop shadow
+                    container.style.overflow = 'hidden';
+                    container.style.pointerEvents = 'none'; // click pass-through
+                    
+                    this._container = container;
+                    return container;
+                }
+            });
+
+            const overviewControl = new L.Control.OverviewMap().addTo(map);
+            
+            // Initialize mini overview map (dragging/scrolling disabled)
+            miniMap = L.map(overviewControl._container, {
+                attributionControl: false,
+                zoomControl: false,
+                dragging: false,
+                touchZoom: false,
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                boxZoom: false,
+                keyboard: false
+            }).setView([15, 10], 0); // Zoom 0 captures the entire world map perfectly!
+
+            // Mini world overview map initialized with Google Satellite (Hybrid) layer for a premium, high-contrast look
+            L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0','mt1','mt2','mt3'],
+                attribution: '© Google'
+            }).addTo(miniMap);
+
+            // Vibrant, elegant yellow viewport outline representing current main map bounds over the dark satellite background
+            // Outline thickness reduced to exactly 1.2 (선 두께 절반으로 축소!)
+            rect = L.rectangle(map.getBounds(), {
+                color: "#ffff00",       // Yellow outline
+                weight: 1.2,            // Slim border weight (half of 2.5) for high-precision viewport bounding box
+                fillColor: "#ffff00",   // Yellow fill
+                fillOpacity: 0.05
+            }).addTo(miniMap);
+
+            // Layer group initialized on minimap to dynamically hold SCM white factory dots
+            miniFilteredDotsLayer = L.layerGroup().addTo(miniMap);
+
+            // Instantly sync minimap overview box as main map pans/zooms
+            map.on('move', function () {
+                rect.setBounds(map.getBounds());
+            });
+        }
+
+        function renderFilters(filters) {
+            const keys = ["국가", "도시", "협력사", "품목", "품목군", "생산유형"];
+            dom.filterPanelLeft.innerHTML = keys.map(key =>
+                `<div class="filter-group" data-filter-key="${key}">
+                    <div class="group-title">${key}</div>
+                    <input type="text" class="form-control form-control-sm mb-1 search-input" placeholder="검색...">
+                    <div class="list-box">
+                        ${(filters[key] || []).map(val => `<a href="#" class="list-item" data-value="${val}">${val}</a>`).join('')}
+                    </div>
+                </div>`
+            ).join('');
+        }
+
+        function renderRiskThemes(themes) {
+            let html = `<button class="btn btn-primary risk-theme-btn" data-theme="전체">전체</button>`;
+            html += themes.map(t => `<button class="btn btn-outline-secondary risk-theme-btn" data-theme="${t}">${t}</button>`).join('');
+            dom.riskThemePanel.innerHTML = html;
+        }
+
+        function updateCascadingFilters(currentLogic, activeSelections) {
+            const keys = ["국가", "도시", "협력사", "품목", "품목군", "생산유형"];
+            keys.forEach(targetKey => {
+                const group = document.querySelector(`.filter-group[data-filter-key="${targetKey}"]`);
+                if (!group) return;
+                const items = group.querySelectorAll('.list-item');
+                const searchTxt = group.querySelector('.search-input').value.toLowerCase();
+                if (currentLogic === 'OR') {
+                    items.forEach(item => {
+                        const val = item.dataset.value.toLowerCase();
+                        item.style.display = val.includes(searchTxt) ? "" : "none";
+                    });
+                    return;
+                }
+                let otherFiltersData = allData;
+                const activeTheme = dom.riskThemePanel.querySelector('.btn-primary').dataset.theme;
+                if (activeTheme !== '전체') {
+                    otherFiltersData = otherFiltersData.filter(r => r[columnMapping['Risk']] && r[columnMapping['Risk']].includes(activeTheme));
+                }
+                Object.entries(activeSelections).forEach(([key, set]) => {
+                    if (key !== targetKey) {
+                        otherFiltersData = otherFiltersData.filter(r => {
+                            const cellVal = String(r[columnMapping[key]]);
+                            if (key === "생산유형") {
+                                const cellRoles = cellVal.split(',').map(v => v.trim()).filter(Boolean);
+                                return cellRoles.some(role => {
+                                    let checkRole = role;
+                                    if (checkRole.startsWith("Office")) {
+                                        checkRole = "Office";
+                                    }
+                                    return set.has(checkRole);
+                                });
+                            }
+                            return set.has(cellVal);
+                        });
+                    }
+                });
+                
+                let validValues;
+                if (targetKey === "생산유형") {
+                    const validSet = new Set();
+                    otherFiltersData.forEach(r => {
+                        const cellVal = String(r[columnMapping[targetKey]]);
+                        cellVal.split(',').map(v => v.trim()).filter(Boolean).forEach(role => {
+                            let checkRole = role;
+                            if (checkRole.startsWith("Office")) {
+                                checkRole = "Office";
+                            }
+                            validSet.add(checkRole);
+                        });
+                    });
+                    validValues = validSet;
+                } else {
+                    validValues = new Set(otherFiltersData.map(r => String(r[columnMapping[targetKey]])));
+                }
+                
+                items.forEach(item => {
+                    const val = item.dataset.value;
+                    const matchesSearch = val.toLowerCase().includes(searchTxt);
+                    const isAvailable = validValues.has(val);
+                    item.style.display = (matchesSearch && isAvailable) ? "" : "none";
+                });
+            });
+        }
+
+        function applyFilters() {
+            const logic = dom.logicBtnGroup.querySelector('.btn-primary').dataset.value;
+            let data = allData;
+            const activeTheme = dom.riskThemePanel.querySelector('.btn-primary').dataset.theme;
+            if (activeTheme !== '전체') {
+                data = data.filter(r => r[columnMapping['Risk']] && r[columnMapping['Risk']].includes(activeTheme));
+            }
+            const selections = {};
+            document.querySelectorAll('.filter-group').forEach(group => {
+                const key = group.dataset.filterKey;
+                const active = [...group.querySelectorAll('.list-item.active')].map(i => i.dataset.value);
+                if (active.length > 0) { selections[key] = new Set(active); }
+            });
+            if (Object.keys(selections).length > 0) {
+                data = data.filter(r => {
+                    const checks = Object.entries(selections).map(([k, set]) => {
+                        const cellVal = String(r[columnMapping[k]]);
+                        if (k === "생산유형") {
+                            const cellRoles = cellVal.split(',').map(v => v.trim()).filter(Boolean);
+                            return cellRoles.some(role => {
+                                let checkRole = role;
+                                if (checkRole.startsWith("Office")) {
+                                    checkRole = "Office";
+                                }
+                                return set.has(checkRole);
+                            });
+                        }
+                        return set.has(cellVal);
+                    });
+                    return logic === 'AND' ? checks.every(v => v) : checks.some(v => v);
+                });
+            }
+            renderTable(data);
+            updateCascadingFilters(logic, selections);
+        }
+
+        window.handleSort = function(colName) {
+            if (currentSort.key === colName) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.key = colName;
+                currentSort.direction = 'asc';
+            }
+            applyFilters();
+        };
+
+        function renderTable(data) {
+            const COL_WIDTHS = {
+                "국가": "65px",
+                "도시": "130px",       // 도시 너비를 130px로 변경
+                "협력사": "195px",     // 협력사 너비를 130px * 1.5 = 195px로 변경 및 Site명의 왼쪽 한 칸 추가
+                "Site명": "auto",      // Site명 (Vendor Desc)은 유동 너비로 설정
+                "품목": "130px",
+                "품목군": "130px",
+                "생산유형": "130px"
+            };
+
+            // Sorting logic implementation
+            let sortedData = [...data];
+            if (currentSort.key) {
+                const colName = currentSort.key;
+                const dir = currentSort.direction === 'asc' ? 1 : -1;
+                sortedData.sort((a, b) => {
+                    let valA, valB;
+                    if (colName === "Site명") {
+                        valA = a[columnMapping["Vendor Desc"]] || '';
+                        valB = b[columnMapping["Vendor Desc"]] || '';
+                    } else {
+                        valA = a[columnMapping[colName]] || '';
+                        valB = b[columnMapping[colName]] || '';
+                    }
+                    
+                    const numA = parseFloat(String(valA).replace(/,/g, ''));
+                    const numB = parseFloat(String(valB).replace(/,/g, ''));
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return (numA - numB) * dir;
+                    }
+                    return String(valA).localeCompare(String(valB), 'ko') * dir;
+                });
+            }
+
+            // Render table headers with absolute fixed widths and sorting indicators
+            let headHtml = '<tr>';
+            treeviewColumns.forEach(c => {
+                const w = COL_WIDTHS[c];
+                const displayLabel = c;
+                
+                let arrow = '';
+                if (currentSort.key === c) {
+                    arrow = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
+                }
+                
+                if (w === 'auto') {
+                    headHtml += `<th style="min-width: 150px !important; cursor: pointer;" onclick="handleSort('${c}')">${displayLabel}${arrow}</th>`;
+                } else {
+                    headHtml += `<th style="width: ${w} !important; min-width: ${w} !important; max-width: ${w} !important; cursor: pointer;" onclick="handleSort('${c}')">${displayLabel}${arrow}</th>`;
+                }
+            });
+            headHtml += `<th style="width: 130px !important; min-width: 130px !important; max-width: 130px !important; text-align: center !important;">협력사 정보</th></tr>`;
+            dom.tableHead.innerHTML = headHtml;
+
+            dom.tableBody.innerHTML = '';
+            markersLayer.clearLayers();
+            dom.resultLabel.textContent = `조회 결과: ${sortedData.length}개`;
+            
+            // Clear SCM pinpoint dots on world minimap (소형 축소지도 레이어 리셋)
+            if (miniFilteredDotsLayer) {
+                miniFilteredDotsLayer.clearLayers();
+            }
+            if (miniHighlightMarker) {
+                miniMap.removeLayer(miniHighlightMarker);
+                miniHighlightMarker = null;
+            }
+
+            const currentMarkers = [];
+            const selectedColorButton = dom.markerColorGroup.querySelector('.btn-primary');
+            const selectedColorValue = selectedColorButton ? selectedColorButton.dataset.color : '#FFFF00';
+            const selectedStyle = MARKER_COLOR_STYLES[selectedColorValue];
+            
+            sortedData.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                let rowHtml = '';
+                treeviewColumns.forEach(c => {
+                    const w = COL_WIDTHS[c];
+                    let cellVal;
+                    if (c === "Site명") {
+                        cellVal = row[columnMapping["Vendor Desc"]] || '';
+                    } else {
+                        cellVal = row[columnMapping[c]] || '';
+                    }
+                    
+                    // HTML 및 큰따옴표 등이 title 속성 문자열 파싱을 깨뜨리지 않도록 이중 가드로 이스케이프 처리
+                    const escapedVal = String(cellVal).replace(/"/g, '&quot;');
+                    
+                    if (w === 'auto') {
+                        rowHtml += `<td class="text-center-data" style="min-width: 150px !important; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedVal}">${cellVal}</td>`;
+                    } else {
+                        rowHtml += `<td class="text-center-data" style="width: ${w} !important; min-width: ${w} !important; max-width: ${w} !important; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapedVal}">${cellVal}</td>`;
+                    }
+                });
+                
+                // SCM Raw B열 (Vendor Code) 체크하여 협력사 정보 팝업 연결 단충을 동적으로 이식
+                const vendorCode = String(row[columnMapping["Vendor Code"]] || '').trim();
+                const vendorType = getVendorType(vendorCode);
+                if (vendorType === 'regular') {
+                    rowHtml += `<td class="text-center-data" style="width: 130px !important; min-width: 130px !important; max-width: 130px !important; padding: 2px !important;"><button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" onclick="openPartnerDetailPopup(event, '${vendorCode}')" style="font-size: 0.72rem; height: 20px; min-height: 0; width: 90px !important; margin: 0 auto; display: block;">정규 협력사</button></td>`;
+                } else if (vendorType === 'ipc') {
+                    rowHtml += `<td class="text-center-data" style="width: 130px !important; min-width: 130px !important; max-width: 130px !important; padding: 2px !important;"><button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" onclick="openPartnerDetailPopup(event, '${vendorCode}')" style="font-size: 0.72rem; height: 20px; min-height: 0; width: 90px !important; margin: 0 auto; display: block;">IPC Vendor</button></td>`;
+                } else if (vendorCode && vendorCode !== '-' && vendorCode !== '미분류') {
+                    rowHtml += `<td class="text-center-data" style="width: 130px !important; min-width: 130px !important; max-width: 130px !important; padding: 2px !important;"><button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" onclick="openPartnerDetailPopup(event, '${vendorCode}')" style="font-size: 0.72rem; height: 20px; min-height: 0; width: 90px !important; margin: 0 auto; display: block;">조회</button></td>`;
+                } else {
+                    rowHtml += `<td class="text-center-data" style="width: 130px !important; min-width: 130px !important; max-width: 130px !important;">-</td>`;
+                }
+                tr.innerHTML = rowHtml;
+                dom.tableBody.appendChild(tr);
+                
+                const lat = parseFloat(row[columnMapping['lat']]), lon = parseFloat(row[columnMapping['lon']]);
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    // MAIN MAP: Standard reverted big yellow divIcon role markers (큰 지도에는 예외없이 기존 노란 배지 핀 고수!)
+                    const typeText = (row[columnMapping['생산유형']] || ' ')[0];
+                    const icon = L.divIcon({
+                        html: `<b>${typeText}</b>`,
+                        className: 'custom-div-icon',
+                        iconSize: [16, 16]
+                    });
+                    const marker = L.marker([lat, lon], { icon: icon })
+                        .addTo(markersLayer)
+                        .bindTooltip(
+                            `<b>${row[columnMapping['협력사']]}</b><br>${row[columnMapping['도시']]} (${row[columnMapping['품목']]})`,
+                            { permanent: false, direction: 'top', offset: [0, -12] }
+                        );
+                    marker.on('add', function() {
+                        const el = this.getElement();
+                        if (el) {
+                            el.style.backgroundColor = selectedStyle.bg;
+                            el.style.borderColor = selectedStyle.border;
+                            el.style.color = selectedStyle.font;
+                        }
+                    });
+                    
+                    // Single row click listener: centers camera and displays address (Reverted back to standard focus)
+                    tr.onclick = () => { 
+                        map.setView([lat, lon], 12); 
+                        marker.openTooltip(); 
+                        
+                        const address = row[columnMapping['추가1']] || '';
+                        const addrDisplay = document.getElementById('main-address-display');
+                        if (address && address !== '-') {
+                            addrDisplay.textContent = `주소 : ${address}`;
+                            addrDisplay.style.display = 'block';
+                        } else {
+                            addrDisplay.style.display = 'none';
+                        }
+                        
+                        // MINIMAP: Trigger focal company highlight dot on SCM world overview map (소형 축소지도의 하이라이트 활성화)
+                        highlightCompanyOnMiniMap(lat, lon);
+                    };
+                    
+                    tr.ondblclick = () => { 
+                        const country = row[columnMapping['국가']];
+                        const city = row[columnMapping['도시']];
+                        const vendor = row[columnMapping['협력사']];
+                        const address = row[columnMapping['추가1']] || '';
+                        showDetailPopup(country, city, vendor, address); 
+                    };
+                    
+                    currentMarkers.push(marker);
+                    
+                    // MINIMAP: Plot all filtered factories as small white pinpoint dots over the satellite tiles (소형 축소지도 공장 흰색 점 표출)
+                    L.circleMarker([lat, lon], {
+                        radius: 2,               // Extremely compact dot size for global scale
+                        color: "#000000",        // Black border for high-contrast contrast against dark satellite tiles
+                        weight: 0.8,
+                        fillColor: "#ffffff",    // WHITE PINPOINT DOTS!
+                        fillOpacity: 1
+                    }).addTo(miniFilteredDotsLayer);
+                }
+            });
+            if (currentMarkers.length > 0) {
+                const featureGroup = L.featureGroup(currentMarkers);
+                map.fitBounds(featureGroup.getBounds().pad(0.1));
+            }
+            
+            // Sync minimap viewport bounding box frame upon table render
+            rect.setBounds(map.getBounds());
+        }
+
+        // MINIMAP: Draws a large yellow target dot highlighting the clicked company on the world overview map (소형 축소지도 전용 노란 대형 하이라이트)
+        window.highlightCompanyOnMiniMap = function(lat, lon) {
+            if (miniHighlightMarker) {
+                miniMap.removeLayer(miniHighlightMarker);
+                miniHighlightMarker = null;
+            }
+            if (isNaN(lat) || isNaN(lon)) return;
+            
+            miniHighlightMarker = L.circleMarker([lat, lon], {
+                radius: 6,               // Focal yellow target circle marker size
+                color: "#000000",        // Black border
+                weight: 1.5,
+                fillColor: "#ffff00",    // Yellow fill
+                fillOpacity: 1
+            }).addTo(miniMap);
+        };
+
+        function addEventListeners() {
+            dom.filterPanelLeft.addEventListener('click', e => { 
+                if (e.target.classList.contains('list-item')) { 
+                    e.preventDefault(); 
+                    e.target.classList.toggle('active'); 
+                    applyFilters(); 
+                } 
+            });
+            dom.filterPanelLeft.addEventListener('input', e => { 
+                if (e.target.classList.contains('search-input')) { applyFilters(); } 
+            });
+            dom.riskThemePanel.addEventListener('click', e => {
+                const button = e.target.closest('button.risk-theme-btn');
+                if (button) {
+                    dom.riskThemePanel.querySelectorAll('.risk-theme-btn').forEach(b => b.classList.replace('btn-primary', 'btn-outline-secondary'));
+                    button.classList.replace('btn-outline-secondary', 'btn-primary');
+                    applyFilters();
+                }
+            });
+            dom.logicBtnGroup.addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if (button) {
+                    dom.logicBtnGroup.querySelectorAll('button').forEach(b => b.classList.replace('btn-primary', 'btn-outline-primary'));
+                    button.classList.replace('btn-outline-primary', 'btn-primary');
+                    applyFilters();
+                }
+            });
+            dom.clearFiltersBtn.addEventListener('click', () => {
+                document.querySelectorAll('.active').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.search-input').forEach(i => i.value = '');
+                const allThemeBtn = dom.riskThemePanel.querySelector('[data-theme="전체"]');
+                if (allThemeBtn) {
+                    dom.riskThemePanel.querySelectorAll('.risk-theme-btn').forEach(b => b.classList.replace('btn-primary', 'btn-outline-secondary'));
+                    allThemeBtn.classList.replace('btn-outline-secondary', 'btn-primary');
+                }
+                const addrDisplay = document.getElementById('main-address-display');
+                if (addrDisplay) {
+                    addrDisplay.style.display = 'none';
+                }
+                currentSort = { key: null, direction: 'asc' }; // Reset sorting state as well!
+                applyFilters();
+            });
+            dom.labelBtnGroup.addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if (button) {
+                    const action = button.dataset.action;
+                    markersLayer.eachLayer(marker => {
+                        if (action === 'show') { marker.openTooltip(); }
+                        else { marker.closeTooltip(); }
+                    });
+                }
+            });
+            dom.mapTypeGroup.addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if (button) {
+                    const layerName = button.dataset.layer;
+                    if (layerName && layerName !== currentLayerName) {
+                        map.removeLayer(mapLayers[currentLayerName]);
+                        mapLayers[layerName].addTo(map);
+                        currentLayerName = layerName;
+                        dom.mapTypeGroup.querySelectorAll('button').forEach(b => b.classList.replace('btn-dark', 'btn-outline-dark'));
+                        button.classList.replace('btn-outline-dark', 'btn-dark');
+                    }
+                }
+            });
+            dom.markerColorGroup.addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if (button) {
+                    const newColorValue = button.dataset.color;
+                    const newStyle = MARKER_COLOR_STYLES[newColorValue];
+                    if (newStyle) {
+                        markersLayer.eachLayer(marker => {
+                            const el = marker.getElement();
+                            if(el) {
+                               el.style.backgroundColor = newStyle.bg;
+                               el.style.borderColor = newStyle.border;
+                               el.style.color = newStyle.font;
+                            }
+                        });
+                        dom.markerColorGroup.querySelectorAll('button').forEach(b => {
+                            b.classList.remove('btn-primary');
+                            b.classList.add('btn-outline-primary');
+                        });
+                        button.classList.remove('btn-outline-primary');
+                        button.classList.add('btn-primary');
+                    }
+                }
+            });
+        }
+        
+        function openPartnerDetailPopup(event, vendorCode) {
+            if (event) event.stopPropagation();
+            
+            const vendorType = getVendorType(vendorCode);
+            const titleEl = document.getElementById('partnerDetailModalLabel');
+            if (vendorType === 'regular') {
+                titleEl.textContent = '협력사 정보 (정규 협력사)';
+            } else if (vendorType === 'ipc') {
+                titleEl.textContent = '협력사 정보 (IPC Vendor)';
+            } else {
+                titleEl.textContent = '협력사 정보';
+            }
+            
+            // 모달 초기 로딩 화면 렌더링
+            document.getElementById('partner-detail-tbody').innerHTML = `
+                <tr><td colspan="4" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 fw-bold text-secondary">협력업체 상세 데이터를 조회하는 중입니다...</div></td></tr>`;
+            
+            document.getElementById('partner-map-container').innerHTML = '';
+            if (partnerChartInstance) { partnerChartInstance.destroy(); }
+            
+            const modal = new bootstrap.Modal(document.getElementById('partnerDetailModal'));
+            modal.show();
+            
+            google.script.run.withSuccessHandler(function(response) {
+                if (response.success) {
+                    if (response.item && response.item.isIpc) {
+                        titleEl.textContent = '협력사 정보 (IPC Vendor)';
+                    } else if (response.item) {
+                        titleEl.textContent = '협력사 정보 (정규 협력사)';
+                    }
+                    renderPartnerDetailData(response.item);
+                } else {
+                    document.getElementById('partner-detail-tbody').innerHTML = `
+                        <tr><td colspan="4" class="text-center py-5 text-danger fw-bold">오류: ${response.message}</td></tr>`;
+                }
+            }).withFailureHandler(function(err) {
+                document.getElementById('partner-detail-tbody').innerHTML = `
+                    <tr><td colspan="4" class="text-center py-5 text-danger fw-bold">서버 통신 오류: ${err.message}</td></tr>`;
+            }).getPartnerDetailByCode(vendorCode);
+        }
+
+        function renderPartnerDetailData(item) {
+            if (!item) return;
+            
+            // 특정 컬럼 데이터 조회 및 마스킹/폴백 헬퍼 함수
+            function getCell(index, fallbackName, labelOverride) {
+                let value = item.values[index] || '';
+                if (value === 'MASKED_SECURE_DATA') {
+                    value = '<span class="text-danger fw-bold">비공개</span>';
+                }
+                return { name: labelOverride || fallbackName, val: value || '-' };
+            }
+            
+            // 1. 기본정보 핵심 지정 필드 캡처 (0-based COLUMN_MAPPING 인덱스 정밀 수치 매핑)
+            const isIpc = item.isIpc || false;
+            
+            const regDateLabel = isIpc ? '최초거래일자' : '정규등록일자';
+            const closeDateLabel = isIpc ? '최종거래일자' : '거래종결일자';
+            const contractIdLabel = isIpc ? '계약 체결 사업부' : '계약ID';
+            const contractDateLabel = isIpc ? '계약 체결여부' : '계약체결일자';
+            
+            const f_H = getCell(3, 'Vendor Code');                        // COLUMN_MAPPING index 3 (Column F)
+            const f_I = getCell(4, '협력업체명');                          // COLUMN_MAPPING index 4 (Column G)
+            const f_R = getCell(12, '대표자');                             // COLUMN_MAPPING index 12 (Column P)
+            const f_BW = getCell(14, '설립일자');                          // COLUMN_MAPPING index 14 (Column R)
+            const f_V = getCell(18, '본사 주소');                          // COLUMN_MAPPING index 18 (Column V)
+            const f_BY = getCell(83, '공장지 주소1');                      // COLUMN_MAPPING index 83 (Column CU)
+            const f_BZ = getCell(84, '공장지 주소2');                      // COLUMN_MAPPING index 84 (Column CV)
+            const f_BY3 = getCell(85, '공장지 주소3');                     // COLUMN_MAPPING index 85 (Column DA)
+            const f_BZ4 = getCell(86, '공장지 주소4');                     // COLUMN_MAPPING index 86 (Column DD)
+            const f_BX = getCell(15, '직원수');                            // COLUMN_MAPPING index 15 (Column S)
+            const f_BV = getCell(19, '거래사업부');                        // COLUMN_MAPPING index 19 (Column CT)
+            const f_S = getCell(13, '상장 여부');                          // COLUMN_MAPPING index 13 (Column Q)
+            const f_Q = getCell(11, '하도급 분류');                         // COLUMN_MAPPING index 11 (Column O)
+            const f_T = getCell(16, '법인등록번호');                        // COLUMN_MAPPING index 16 (Column T)
+            const f_U = getCell(17, '사업자등록번호');                      // COLUMN_MAPPING index 17 (Column U)
+            const f_J = getCell(5, '당사 거래 Plant');                     // COLUMN_MAPPING index 5 (Column H)
+            const f_M = getCell(8, '업태');                                // COLUMN_MAPPING index 8 (Column K)
+            const f_N = getCell(9, '품목군');                              // COLUMN_MAPPING index 9 (Column L)
+            const f_O = getCell(10, '세부 품목');                          // COLUMN_MAPPING index 10 (Column M)
+            const f_D = getCell(1, '정규등록일자', regDateLabel);         // COLUMN_MAPPING index 1 (Column D)
+            const f_E = getCell(2, '거래종결일자', closeDateLabel);       // COLUMN_MAPPING index 2 (Column E)
+            const f_AA = getCell(21, '계약ID', contractIdLabel);          // COLUMN_MAPPING index 21 (Column AA)
+            const f_Z = getCell(20, '계약체결일자', contractDateLabel);     // COLUMN_MAPPING index 20 (Column Z)
+            
+            // 2. 공장지 주소 존재 여부에 따른 동적 행 구성
+            const escapeTooltip = (str) => String(str || '').replace(/"/g, '&quot;');
+            const esc_V = escapeTooltip(f_V.val);
+            const esc_BY = escapeTooltip(f_BY.val);
+            const esc_BZ = escapeTooltip(f_BZ.val);
+            const esc_BY3 = escapeTooltip(f_BY3.val);
+            const esc_BZ4 = escapeTooltip(f_BZ4.val);
+
+            const byAddress = String(f_BY.val).trim();
+            const hasFactory1Row = byAddress !== '' && byAddress !== '-' && byAddress !== 'MASKED_SECURE_DATA';
+            const f1RowHtml = hasFactory1Row ? `
+                <tr>
+                    <td class="partner-detail-label">${f_BY.name}</td>
+                    <td colspan="3" style="word-break: break-all; white-space: normal; width: 380px !important; max-width: 380px !important;" title="${esc_BY}">${f_BY.val}</td>
+                </tr>` : '';
+
+            const bzAddress = String(f_BZ.val).trim();
+            const hasFactory2Row = bzAddress !== '' && bzAddress !== '-' && bzAddress !== 'MASKED_SECURE_DATA';
+            const f2RowHtml = hasFactory2Row ? `
+                <tr>
+                    <td class="partner-detail-label">${f_BZ.name}</td>
+                    <td colspan="3" style="word-break: break-all; white-space: normal; width: 380px !important; max-width: 380px !important;" title="${esc_BZ}">${f_BZ.val}</td>
+                </tr>` : '';
+
+            const by3Address = String(f_BY3.val).trim();
+            const hasFactory3Row = by3Address !== '' && by3Address !== '-' && by3Address !== 'MASKED_SECURE_DATA';
+            const f3RowHtml = hasFactory3Row ? `
+                <tr>
+                    <td class="partner-detail-label">${f_BY3.name}</td>
+                    <td colspan="3" style="word-break: break-all; white-space: normal; width: 380px !important; max-width: 380px !important;" title="${esc_BY3}">${f_BY3.val}</td>
+                </tr>` : '';
+
+            const bz4Address = String(f_BZ4.val).trim();
+            const hasFactory4Row = bz4Address !== '' && bz4Address !== '-' && bz4Address !== 'MASKED_SECURE_DATA';
+            const f4RowHtml = hasFactory4Row ? `
+                <tr>
+                    <td class="partner-detail-label">${f_BZ4.name}</td>
+                    <td colspan="3" style="word-break: break-all; white-space: normal; width: 380px !important; max-width: 380px !important;" title="${esc_BZ4}">${f_BZ4.val}</td>
+                </tr>` : '';
+
+            const tableHtml = `
+                <tr>
+                    <td class="partner-detail-label" style="width: 17.5% !important;">${f_H.name}</td>
+                    <td style="width: 32.5% !important;" title="${f_H.val}">${f_H.val}</td>
+                    <td class="partner-detail-label" style="width: 17.5% !important;">${f_I.name}</td>
+                    <td style="width: 32.5% !important;" title="${f_I.val}">${f_I.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">대표자</td>
+                    <td title="${f_R.val}">${f_R.val}</td>
+                    <td class="partner-detail-label">설립일자</td>
+                    <td title="${f_BW.val}">${f_BW.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">${f_V.name}</td>
+                    <td colspan="3" style="word-break: break-all; white-space: normal; width: 380px !important; max-width: 380px !important;" title="${esc_V}">${f_V.val}</td>
+                </tr>
+                ${f1RowHtml}
+                ${f2RowHtml}
+                ${f3RowHtml}
+                ${f4RowHtml}
+                <tr>
+                    <td class="partner-detail-label">${f_BX.name}</td>
+                    <td title="${f_BX.val}">${f_BX.val}</td>
+                    <td class="partner-detail-label">${f_BV.name}</td>
+                    <td title="${f_BV.val}">${f_BV.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">${f_S.name}</td>
+                    <td title="${f_S.val}">${f_S.val}</td>
+                    <td class="partner-detail-label">${f_Q.name}</td>
+                    <td title="${f_Q.val}">${f_Q.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">${f_T.name}</td>
+                    <td title="${f_T.val}">${f_T.val}</td>
+                    <td class="leaflet-control-overview partner-detail-label">${f_U.name}</td>
+                    <td title="${f_U.val}">${f_U.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">${f_J.name}</td>
+                    <td title="${f_J.val}">${f_J.val}</td>
+                    <td class="partner-detail-label">${f_M.name}</td>
+                    <td title="${f_M.val}">${f_M.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">${f_N.name}</td>
+                    <td title="${f_N.val}">${f_N.val}</td>
+                    <td class="partner-detail-label">${f_O.name}</td>
+                    <td title="${f_O.val}">${f_O.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">${f_D.name}</td>
+                    <td title="${f_D.val}">${f_D.val}</td>
+                    <td class="partner-detail-label">${f_E.name}</td>
+                    <td title="${f_E.val}">${f_E.val}</td>
+                </tr>
+                <tr>
+                    <td class="partner-detail-label">${f_AA.name}</td>
+                    <td title="${f_AA.val}">${f_AA.val}</td>
+                    <td class="partner-detail-label">${f_Z.name}</td>
+                    <td title="${f_Z.val}">${f_Z.val}</td>
+                </tr>
+            `;
+            document.getElementById('partner-detail-tbody').innerHTML = tableHtml;
+            
+            // 2. 지도 위치 데이터 캐싱
+            window.currentPartnerMapData = {
+                headLat: item.lat || '',
+                headLon: item.lon || '',
+                factory1Lat: item.factory1Lat || '',
+                factory1Lon: item.factory1Lon || '',
+                factory2Lat: item.factory2Lat || '',
+                factory2Lon: item.factory2Lon || '',
+                factory3Lat: item.factory3Lat || '',
+                factory4Lat: item.factory4Lat || '',
+                factory4Lon: item.factory4Lon || '',
+                factory1Address: f_BY.val || '',
+                factory2Address: f_BZ.val || '',
+                factory3Address: f_BY3.val || '',
+                factory4Address: f_BZ4.val || ''
+            };
+
+            // 3. 공장 선택 버튼 동적 제어
+            const updateFactoryBtn = (btnId, addressVal) => {
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+                const address = String(addressVal).trim();
+                const hasAddress = address !== '' && address !== '-' && address !== 'MASKED_SECURE_DATA';
+                
+                if (!hasAddress) {
+                    btn.style.setProperty('display', 'none', 'important');
+                    btn.classList.remove('btn-map-active');
+                } else {
+                    btn.style.removeProperty('display');
+                    btn.classList.add('btn-map-active');
+                }
+            };
+            updateFactoryBtn('btn-map-factory1', f_BY.val);
+            updateFactoryBtn('btn-map-factory2', f_BZ.val);
+            updateFactoryBtn('btn-map-factory3', f_BY3.val);
+            updateFactoryBtn('btn-map-factory4', f_BZ4.val);
+
+            switchMapLocation('head');
+            
+            // 4. 거래정보 데이터 및 차트 렌더링
+            const getPurchaseVal = (year) => {
+                const yr = parseInt(year);
+                if (yr < 2013 || yr > 2030) return '-';
+                const colIdx = 25 + (yr - 2013); // 2013년은 Index 25 (AE열)에 매핑
+                return getCell(colIdx, year).val;
+            };
+
+            const purchaseHtml = `
+                <tr class="no-border-bottom">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2011년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2012년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2013년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2014년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2015년</td>
+                </tr>
+                <tr class="no-border-top" style="border-bottom: 1px solid #dee2e6;">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2011')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2012')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2013')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2014')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2015')}</td>
+                </tr>
+                <tr class="no-border-bottom">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2016년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2017년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2018년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2019년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2020년</td>
+                </tr>
+                <tr class="no-border-top" style="border-bottom: 1px solid #dee2e6;">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2016')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2017')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2018')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2019')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2020')}</td>
+                </tr>
+                <tr class="no-border-bottom">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2021년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2022년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2023년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2024년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2025년</td>
+                </tr>
+                <tr class="no-border-top" style="border-bottom: 1px solid #dee2e6;">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2021')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2022')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2023')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2024')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2025')}</td>
+                </tr>
+                <tr class="no-border-bottom">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2026년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2027년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2028년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2029년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2030년</td>
+                </tr>
+                <tr class="no-border-top">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2026')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2027')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2028')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2029')}</td>
+                    <td style="width: 16.5% !important;">${getPurchaseVal('2030')}</td>
+                </tr>
+            `;
+            document.getElementById('partner-purchase-table').innerHTML = purchaseHtml;
+            
+            // 거래액 그래프 세팅
+            const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'];
+            const trendData = [];
+            years.forEach(yr => {
+                const val = getPurchaseVal(yr);
+                const num = parseFloat(String(val).replace(/,/g, ''));
+                trendData.push(isNaN(num) ? null : num);
+            });
+            
+            let firstIdx = -1;
+            for (let i = 0; i < trendData.length; i++) {
+                if (trendData[i] !== null && trendData[i] > 0) {
+                    firstIdx = i;
+                    break;
+                }
+            }
+            
+            let activeYears = years;
+            let activeData = trendData;
+            if (firstIdx !== -1) {
+                activeYears = years.slice(firstIdx);
+                activeData = trendData.slice(firstIdx);
+            }
+            
+            if (partnerChartInstance) partnerChartInstance.destroy();
+            const canvasCtx = document.getElementById('partner-trend-chart').getContext('2d');
+            partnerChartInstance = new Chart(canvasCtx, {
+                type: 'line',
+                data: {
+                    labels: activeYears.map(yr => "'" + yr.substring(2)),
+                    datasets: [{
+                        label: '구매액',
+                        data: activeData,
+                        borderColor: '#1428A0',
+                        backgroundColor: 'rgba(20, 40, 160, 0.08)',
+                        borderWidth: 2.8,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#1428A0',
+                        tension: 0.15,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: '당사 구매금액', font: { size: 16.5, weight: 'bold' }, padding: { bottom: 10 } },
+                        datalabels: {
+                            display: 'auto', 
+                            align: 'top', 
+                            anchor: 'center', 
+                            offset: 5, 
+                            color: '#495057', 
+                            font: { size: 12.8, weight: 'bold' },
+                            formatter: (val) => {
+                                if (val === null || val === undefined) return '';
+                                return val.toLocaleString('ko-KR') + '백'; // append '백' to represent 백만원 unit!
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 13.6, weight: 'bold' } } },
+                        y: { display: false }
+                    }
+                }
+            });
+
+            // 5. 재무정보 렌더링
+            const getFinVal = (idx) => item.values[idx] || '-';
+            const financeHtml = `
+                <tr class="no-border-bottom">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2021년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2022년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2023년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2024년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2025년</td>
+                </tr>
+                <tr class="no-border-bottom no-border-top">
+                    <td class="partner-detail-label">매출액</td>
+                    <td title="${getFinVal(43)}">${getFinVal(43)}</td>
+                    <td title="${getFinVal(44)}">${getFinVal(44)}</td>
+                    <td title="${getFinVal(45)}">${getFinVal(45)}</td>
+                    <td title="${getFinVal(46)}">${getFinVal(46)}</td>
+                    <td title="${getFinVal(47)}">${getFinVal(47)}</td>
+                </tr>
+                <tr class="no-border-bottom no-border-top">
+                    <td class="partner-detail-label">영업이익</td>
+                    <td title="${getFinVal(53)}">${getFinVal(53)}</td>
+                    <td title="${getFinVal(54)}">${getFinVal(54)}</td>
+                    <td title="${getFinVal(55)}">${getFinVal(55)}</td>
+                    <td title="${getFinVal(56)}">${getFinVal(56)}</td>
+                    <td title="${getFinVal(57)}">${getFinVal(57)}</td>
+                </tr>
+                <tr class="no-border-bottom no-border-top">
+                    <td class="partner-detail-label">당기순이익</td>
+                    <td title="${getFinVal(63)}">${getFinVal(63)}</td>
+                    <td title="${getFinVal(64)}">${getFinVal(64)}</td>
+                    <td title="${getFinVal(65)}">${getFinVal(65)}</td>
+                    <td title="${getFinVal(66)}">${getFinVal(66)}</td>
+                    <td title="${getFinVal(67)}">${getFinVal(67)}</td>
+                </tr>
+                <tr class="no-border-top" style="border-bottom: 2px solid #dee2e6;">
+                    <td class="partner-detail-label">이익잉여금</td>
+                    <td title="${getFinVal(73)}">${getFinVal(73)}</td>
+                    <td title="${getFinVal(74)}">${getFinVal(74)}</td>
+                    <td title="${getFinVal(75)}">${getFinVal(75)}</td>
+                    <td title="${getFinVal(76)}">${getFinVal(76)}</td>
+                    <td title="${getFinVal(77)}">${getFinVal(77)}</td>
+                </tr>
+                <tr class="no-border-bottom">
+                    <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2026년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2027년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2028년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2029년</td>
+                    <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2030년</td>
+                </tr>
+                <tr class="no-border-bottom no-border-top">
+                    <td class="partner-detail-label">매출액</td>
+                    <td title="${getFinVal(48)}">${getFinVal(48)}</td>
+                    <td title="${getFinVal(49)}">${getFinVal(49)}</td>
+                    <td title="${getFinVal(50)}">${getFinVal(50)}</td>
+                    <td title="${getFinVal(51)}">${getFinVal(51)}</td>
+                    <td title="${getFinVal(52)}">${getFinVal(52)}</td>
+                </tr>
+                <tr class="no-border-bottom no-border-top">
+                    <td class="partner-detail-label">영업이익</td>
+                    <td title="${getFinVal(58)}">${getFinVal(58)}</td>
+                    <td title="${getFinVal(59)}">${getFinVal(59)}</td>
+                    <td title="${getFinVal(60)}">${getFinVal(60)}</td>
+                    <td title="${getFinVal(61)}">${getFinVal(61)}</td>
+                    <td title="${getFinVal(62)}">${getFinVal(62)}</td>
+                </tr>
+                <tr class="no-border-bottom no-border-top">
+                    <td class="partner-detail-label">당기순이익</td>
+                    <td title="${getFinVal(68)}">${getFinVal(68)}</td>
+                    <td title="${getFinVal(69)}">${getFinVal(69)}</td>
+                    <td title="${getFinVal(70)}">${getFinVal(70)}</td>
+                    <td title="${getFinVal(71)}">${getFinVal(71)}</td>
+                    <td title="${getFinVal(72)}">${getFinVal(72)}</td>
+                </tr>
+                <tr class="no-border-top">
+                    <td class="partner-detail-label">이익잉여금</td>
+                    <td title="${getFinVal(78)}">${getFinVal(78)}</td>
+                    <td title="${getFinVal(79)}">${getFinVal(79)}</td>
+                    <td title="${getFinVal(80)}">${getFinVal(80)}</td>
+                    <td title="${getFinVal(81)}">${getFinVal(81)}</td>
+                    <td title="${getFinVal(82)}">${getFinVal(82)}</td>
+                </tr>
+            `;
+            document.getElementById('partner-finance-table').innerHTML = financeHtml;
+        }
+
+        window.switchMapLocation = function(type) {
+            const data = window.currentPartnerMapData;
+            if (!data) return;
+
+            const btnHead = document.getElementById('btn-map-head');
+            const btnFactory1 = document.getElementById('btn-map-factory1');
+            const btnFactory2 = document.getElementById('btn-map-factory2');
+            const btnFactory3 = document.getElementById('btn-map-factory3');
+            const btnFactory4 = document.getElementById('btn-map-factory4');
+
+            [btnHead, btnFactory1, btnFactory2, btnFactory3, btnFactory4].forEach(btn => {
+                if (btn) {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                }
+            });
+
+            const activeBtn = document.getElementById('btn-map-' + (type === 'head' ? 'head' : type));
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-outline-primary');
+                activeBtn.classList.add('btn-primary');
+            }
+
+            let lat = '', lon = '';
+            let label = '';
+            if (type === 'head') { lat = data.headLat; lon = data.headLon; label = '본사'; }
+            else if (type === 'factory1') { lat = data.factory1Lat; lon = data.factory1Lon; label = '공장1'; }
+            else if (type === 'factory2') { lat = data.factory2Lat; lon = data.factory2Lon; label = '공장2'; }
+            else if (type === 'factory3') { lat = data.factory3Lat; lon = data.factory3Lon; label = '공장3'; }
+            else if (type === 'factory4') { lat = data.factory4Lat; lon = data.factory4Lon; label = '공장4'; }
+
+            const mapContainer = document.getElementById('partner-map-container');
+            if (lat && lon && String(lat).trim() !== '' && String(lon).trim() !== '') {
+                mapContainer.innerHTML = `
+                    <iframe src="https://maps.google.com/maps?q=${lat},${lon}&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                            width="100%" height="100%" frameborder="0" style="border:0; min-height: 100px; display: block;" allowfullscreen>
+                </iframe>`;
+            } else {
+                mapContainer.innerHTML = `
+                    <div class="text-center p-4">
+                        <svg width="36" height="42" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        <div class="text-secondary fw-bold" style="font-size: 0.85rem; line-height: 1.4;">${label}의 위도/경도 좌표 정보가 없어<br><span style="font-weight: normal; font-size: 0.8rem; color: #a0a0a0;">지도를 표시할 수 없습니다.</span></div>
+                    </div>`;
+            }
+        };
+
+        function applyZoomScaling() {
+            var baseWidth = 2560;
+            var currentWidth = window.innerWidth;
+            var zoomRatio = currentWidth / baseWidth;
+            document.body.style.zoom = zoomRatio;
+        }
+        
+        window.addEventListener('load', applyZoomScaling);
+        window.addEventListener('resize', applyZoomScaling);
+        applyZoomScaling();
+        
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<style>
+    #global-header { flex-shrink: 0; background-color: #1428A0; height: 50px; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white; margin-bottom: 20px; }
+    #global-header .header-title { font-weight: 700; font-size: 1.1rem; }
+    #global-header .module-title { color: #00BFFF; font-weight: 700; }
+    #global-header .header-buttons { display: flex; align-items: center; gap: 15px; }
+    #global-header .header-buttons .btn { font-size: 0.85rem; }
+    #global-header .btn-icon-menu { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; }
+    #global-header .btn-icon-menu svg { width: 22px; height: 22px; }
+    #global-header .btn-icon-menu::after { display: none; }
+    #global-header .dropdown-item {font-size: 0.9rem; font-weight: 700; }
+    #global-header .user-info-text { font-size: 0.9rem; font-weight: 500; color: #E0E0E0; }
+    #global-header .confidential-text { font-size: 0.9rem; font-weight: 700; color: #FF5274; margin-left: 15px; }
+    #global-header .dropdown-divider { margin: 0.3rem 0; }
+</style>
+<script>
+    const USER_NAME_MAP = {
+      "hm2521.kwon": "권혁민", "ky3247.kim": "김경율", "nt.kim": "김나단", "mh501.kim": "김미현", "kmjun.kim": "김민준", "yumi91.kim": "김유미", "yubeom.kim": "김유범", "es0901.kim": "김은선", "jung.bae.kim": "김정배", "jinchul2.kim": "김진철", "hr1206.kim": "김효령", "seongoh.noh": "노성오", "sehyun4.park": "박세현", "jy3124.park": "박재용", "jps.baek": "백정필", "jungjin.seo": "서정진", "juwon.seo": "서주원", "mjnew.wang": "왕민정", "sangduek.lee": "이상득", "eunho3.lee": "이은호", "je0408.lee": "이정은", "sujin.jeong": "정수진", "jinsang.jung": "정진상", "dohee.cho": "조도희", "hyoseok.cho": "조효석", "jisoon8.park": "박지순", "tu.kang" : "강태욱", "syn.joo" : "주승연", "hr0621.kim" : "김혜림", "cy0.lee" : "이창영", "hanjo73.kim" : "김한조", "jm_m.choi" : "최지미", "jiwan86.kim" : "김지완", "kyutae.yoo" : "유규태", "winhan" : "한창호"
+    };
+    const MENU_GROUPS = [
+        [ { title: "메-SRM Home", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbwKxZxVAmldaNxyiQaIA6Gs6f66-mZbSRiYutd4JMHKhxyoixalarvQWg7vt8sgfDQdFw/exec" } ],
+        [ { title: "생산실적 및 계획", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbzYX5MbZgbjMnXCp41azt6lTnsZCrvR4IdC_quEBpmcRVEeoFUAX3MzyX6pKsmIdVaq/exec" } ],
+        [
+            { title: "협력업체 관리대장", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbz-V15SeGOOfvOBSzc_sEhuUxeZQXyGMCS0kLo7pg5KE7AQ74nRx4dMAVzcA1L6slCH/exec" },
+            { title: "SCM Map", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbzU25bN2SLKCZNSu3PGDWBrfWDrzhtXEQjciNe_O3WDoI_ZuCdZCyiVQERF4-5ogF-Nsw/exec" },
+            { title: "SCM Risk 관리", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbzOYkcuLr73OYEwCAS7z3DUk7kcPYtlqcUBL1t3IHpEVRwHnVfN30kO_EGTHcaC5fYB6A/exec" }
+        ],
+        [
+            { title: "재고실적 분석", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbwpbA_98TwAUhNbPnXzVpITgrXGPSd8R1fojOulCRq1mzfQL0ccQFnjRNfM06JyZlfj4A/exec" },
+            { title: "재고실적 추이 분석", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbxUoQ3c33e2-RCyF5Q6O1ZSPntlAOJYA4sbRWKLSivOgRsF55yct9YDj6h5cRQ1tsl2Dw/exec" }
+        ],
+        [
+            { title: "LTB 현황 관리", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycby6Q2fBi-cK_zQ9Yspei2acvHDwIim1A6V8hQJG4TsePHbbmFOzfhkAwCQr9C23-DPQ/exec" },
+            { title: "환율변동 관리", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbzoXbvBT9fVjTXoYjs_sySxJN_LucQ0QfyMXpBzNbIRZDG_jp7i-y9vt55W3_0x23dz/exec" },
+            { title: "원자재 가격변동 현황", url: "https://script.google.com/a/macros/ai.samsunghealthcare.com/s/AKfycbyeayvsgfapSKeWXxWEBwc3X_yHOPLdyyLllrqqqYy7B_LDFn8_QTbX1LSjBpjoaEo/exec" }
+        ],
+        [
+            { title: "원가절감 진척현황", url: "https://docs.google.com/spreadsheets/d/1x6BxdsN8TOluJ9AOclLhwV3IfIxK4NVNrTadFNVGDC8/edit?usp=sharing" },
+            { title: "TBD 1", url: "https://" },
+            { title: "TBD 2", url: "https://" }
+        ]
+    ];
+    function renderHeaderUI(userEmail, moduleTitle) {
+        let headerElement = document.getElementById('global-header');
+        if (!headerElement) {
+            headerElement = document.createElement('header');
+            headerElement.id = 'global-header';
+            document.body.insertBefore(headerElement, document.body.firstChild);
+        }
+        let displayName = 'USER';
+        if (userEmail) {
+            const userId = userEmail.split('@')[0];
+            displayName = USER_NAME_MAP[userId] || userId.toUpperCase();
+        }
+        if (!window.initialConnectTime) {
+            const now = new Date();
+            const pad = (num) => String(num).padStart(2, '0');
+            window.initialConnectTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        }
+        const titleSuffix = moduleTitle ? `&nbsp;&nbsp;<span class="module-title">${moduleTitle}</span>` : '';
+        let html = `
+            <div class="header-title">삼성메디슨 구매그룹${titleSuffix}</div>
+            <div class="header-buttons">
+                <span class="user-info-text">${displayName}&nbsp;&nbsp;&nbsp;&nbsp;접속시간: ${window.initialConnectTime}</span>
+                <div class="dropdown">
+                    <button class="btn btn-outline-light btn-icon-menu" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false" title="전체 메뉴">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+        `;
+        MENU_GROUPS.forEach((group, index) => {
+            group.forEach(link => {
+                html += `<li><a class="dropdown-item" href="${link.url}" target="_blank">${link.title}</a></li>`;
+            });
+            if (index < MENU_GROUPS.length - 1) {
+                html += `<li><hr class="dropdown-divider"></li>`;
+            }
+        });
+        html += `
+                    </ul>
+                </div>
+                <span class="confidential-text">Confidential</span>
+            </div>
+        `;
+        headerElement.innerHTML = html;
+    }
+</script>

@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>협력업체 관리대장</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <style>
+        :root { --samsung-blue: #1428A0; --bg-color: #f4f7f9; --header-bg-color: #f0f8ff; }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        body { display: flex; flex-direction: column; background-color: var(--bg-color); font-family: 'Noto Sans KR', sans-serif; color: #000; }
+        .main-content { flex-grow: 1; padding: 0 20px 20px; display: flex; flex-direction: column; overflow: hidden; }
+        .card-custom { width: 100%; height: 100%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e1e4e8; display: flex; flex-direction: column; overflow: hidden; }
+        .top-section { flex-shrink: 0; padding: 20px 30px; border-bottom: 1px solid #e9ecef; overflow-y: auto; background: white; z-index: 105; }
+        .dashboard-section { padding: 0 0 1rem 0; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+        .chart-container { position: relative; height: 230px; } /* Increased height for better graph readability */
+        .controls-wrapper { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-end; margin-top: 10px; }
+        
+        /* Typography enhancements */
+        .button-group-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; color: #000; border-bottom: 2px solid var(--samsung-blue); display: inline-block; padding-bottom: 3px; align-self: flex-start; }
+        .filter-buttons { display: flex; flex-wrap: wrap; gap: 4px; } /* Wider gaps */
+        
+        /* Matching button styles from 재고실적분석 */
+        .btn-primary, .filter-btn.btn-primary {
+            background-color: var(--samsung-blue) !important;
+            border-color: var(--samsung-blue) !important;
+            color: #ffffff !important;
+        }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active,
+        .filter-btn.btn-primary:hover {
+            background-color: #0b1c73 !important;
+            border-color: #0b1c73 !important;
+            color: #ffffff !important;
+        }
+        .btn-outline-primary, .filter-btn.btn-outline-primary {
+            color: var(--samsung-blue) !important;
+            border-color: var(--samsung-blue) !important;
+            background-color: transparent !important;
+        }
+        .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active, .btn-outline-primary.active,
+        .filter-btn.btn-outline-primary:hover {
+            background-color: var(--samsung-blue) !important;
+            border-color: var(--samsung-blue) !important;
+            color: #ffffff !important;
+        }
+        
+        /* Compact and roomy filter buttons to fit on a single row */
+        .filter-btn { font-size: 0.82rem !important; padding: 3px 6px !important; line-height: 1.4 !important; min-height: 0 !important; font-weight: 500 !important; }
+        
+        .table-section { flex-grow: 1; position: relative; overflow: auto; margin: 0 30px 20px 30px; padding: 0 0 20px 0; background: white; }      
+        
+        /* Table font size and structure matching 재고실적분석 */
+        .table { font-size: 0.85rem; border-collapse: separate; border-spacing: 0; width: auto; min-width: 100%; table-layout: fixed; color: #000; }      
+        .table th, .table td { box-sizing: border-box !important; background-clip: padding-box !important; }
+        .table thead th { position: sticky; z-index: 100; background-color: var(--header-bg-color) !important; text-align: center !important; vertical-align: middle; border: 1px solid #dee2e6; white-space: nowrap; font-weight: 700; color: #000 !important; }
+        
+        /* Adjusted heights and offsets for larger font-size and widened columns */
+        .summary-header th { top: 0; z-index: 102; height: 36px; }
+        .main-header-row th { top: 36px; z-index: 102; height: 36px; }
+        .filter-row th { top: 72px; z-index: 101; height: 36px; padding: 5px 3px !important; }
+        
+        .sticky-col { position: sticky !important; z-index: 10 !important; background-color: white !important; background-clip: padding-box !important; }
+        thead .sticky-col { z-index: 110 !important; background-color: var(--header-bg-color) !important; }
+        .filter-row .sticky-col { z-index: 105 !important; background-color: #f8f9fa !important; }
+        
+        /* Widened 정규등록일자, 거래종결일자 columns with perfectly calculated left offsets */
+        .col-fix-1 { left: 0px;   width: 75px;  min-width: 75px;  max-width: 75px; }  
+        .col-fix-2 { left: 75px;  width: 110px; min-width: 110px; max-width: 110px; }  
+        .col-fix-3 { left: 185px; width: 110px; min-width: 110px; max-width: 110px; }  
+        .col-fix-4 { left: 295px; width: 80px;  min-width: 80px;  max-width: 80px; }  
+        .col-fix-5 { left: 375px; width: 400px; min-width: 400px; max-width: 400px; border-right: 3px double var(--samsung-blue) !important; box-shadow: 2px 0 5px rgba(0,0,0,0.11); }
+        
+        /* Limit default column widths to prevent excessive stretching and enable scroll-x */
+        .card-custom .table th:not(.sticky-col), .card-custom .table td:not(.sticky-col),
+        #ipc-vendor-table th:not(.sticky-col), #ipc-vendor-table td:not(.sticky-col) {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Roomy table cells for excellent legibility */
+        .table td { white-space: nowrap; padding: 5px 10px !important; border: 1px solid #dee2e6; vertical-align: middle; background-color: white; color: #000; }
+        .table th { padding: 5px 10px !important; }
+        
+        .table-hover tbody tr:hover td.sticky-col { background-color: #f1f4ff !important; }
+        .text-right { text-align: right !important; }
+        .text-center-data { text-align: center !important; }
+        
+        /* Larger filter input matching 재고실적분석's clean filter inputs */
+        .filter-input { width: 100%; max-width: 100%; border: 1px solid #ccc; border-radius: 4px; padding: 4px 2px; font-size: 0.8rem; min-width: 0 !important; text-align: center; box-sizing: border-box !important; }
+        .filter-input-numeric { background-color: #fff3cd !important; border-color: #ffe69c !important; color: #333; }
+        .map-link { color: #0d6efd; text-decoration: underline; cursor: pointer; }
+        #alert-placeholder { font-size: 0.95rem; }
+        .sortable { cursor: pointer; position: relative; padding-right: 18px !important; }
+        .sortable:hover { background-color: #e2e8f0 !important; }
+        .sort-icon::after { content: '↕'; position: absolute; right: 5px; color: #ccc; font-size: 0.75rem; top: 50%; transform: translateY(-50%); }
+        .sort-asc::after { content: '▲'; color: var(--samsung-blue); font-size: 0.75rem; }
+        .sort-desc::after { content: '▼'; color: var(--samsung-blue); font-size: 0.75rem; }
+        
+        .btn-reset { font-weight: 700 !important; }
+        
+        /* Beautiful loading overlay layout matching 재고실적분석 */
+        .loading-overlay { position: fixed; top: 50px; left: 0; width: 100%; height: calc(100% - 50px); background: rgba(255,255,255,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .masked-cell {background-color: #e2e3e5 !important; color: transparent !important; pointer-events: none !important; }
+        .masked-cell a { display: none !important; } /* Hide map links when masked */
+        .no-select-table { user-select: none; -webkit-user-select: none; -moz-user-select: none; }
+
+        /* 상세 정보 모달 테이블 스타일 - 서식 완전 통일 및 100% 가득 찬 너비로 flex 좌측에 밀착 */
+        .partner-detail-table {
+            font-size: 0.81rem !important;
+            width: 100% !important; 
+            table-layout: fixed;
+            border-collapse: collapse;
+            border: 1px solid #dee2e6;
+        }
+        .partner-detail-table td, .partner-detail-table th {
+            padding: 6px 10px !important;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+            height: 34px;
+        }
+        /* 제목 셀 너비 17.5% 고정 (기존 대비 80% 너비 축소 완벽 대응) */
+        .partner-detail-table td.partner-detail-label {
+            width: 17.5% !important;
+            background-color: #f1f3f5 !important;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+        }
+        /* 내용 셀 너비 32.5% 유동 (기존 대비 70% 너비 축소 완벽 수렴) */
+        .partner-detail-table td:not(.partner-detail-label) {
+            width: 32.5% !important;
+        }
+        /* 연도/금액 사이 가로 경계 테두리 제거용 특수 스타일 */
+        .no-border-bottom td {
+            border-bottom: none !important;
+        }
+        .no-border-top td {
+            border-top: none !important;
+        }
+
+        /* 3분할 비대칭 그리드 레이아웃 (좌측 표 3/5=54% 축소 수립, 우측 지도/차트 2/5=46% 유지) */
+        .partner-modal-row {
+            display: flex;
+            align-items: stretch; /* 좌측 표의 높이에 우측 미디어가 칼같이 자동 동기화 정렬됨 */
+            gap: 24px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .partner-modal-row-left {
+            width: calc(54% - 12px) !important; /* 54% 너비 정밀 축소 */
+            flex: 0 0 calc(54% - 12px) !important;
+            min-width: 0;
+        }
+        .partner-modal-row-right {
+            width: calc(46% - 12px) !important; /* 46% 넓은 지도/차트 가로 폭 수호 */
+            flex: 0 0 calc(46% - 12px) !important;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 불투명 흰색 활성 버튼 스타일 - 주소가 존재하는 공장 버튼용 (선택되지 않았을 때) */
+        .btn-map-active:not(.btn-primary) {
+            background-color: #ffffff !important; /* Solid white background */
+            border-color: #009de0 !important; /* Nice sky blue border */
+            color: #009de0 !important; /* Sky blue text */
+            opacity: 1 !important; /* Fully opaque */
+        }
+        .btn-map-active:not(.btn-primary):hover {
+            background-color: rgba(0, 157, 224, 0.08) !important; /* Light sky blue hover background */
+            color: var(--samsung-blue) !important;
+        }
+    </style>
+</head>
+<body>
+<?!= include('header'); ?>
+<div id="loading-overlay" class="loading-overlay">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <span id="loader-text-display" class="mt-3 fw-bold fs-5 text-secondary text-center" style="line-height: 1.6;">협력사 거래정보 로딩 중...<br><span style="font-size: 0.95rem; font-weight: normal; color: #6c757d;">잠시만 기다려 주십시오.</span></span>
+</div>
+<main class="main-content">
+    <div class="card-custom">
+        <div class="top-section">
+            <div class="dashboard-section">
+                <div id="dashboard-grid" class="dashboard-grid"></div>
+            </div>
+            
+            <div class="controls-wrapper">
+                <div class="d-flex flex-column" id="status-filter-container"><span class="button-group-title">정규 구분</span><div class="filter-buttons" id="status-filters"></div></div>
+                <div class="d-flex flex-column" id="plant-filter-container"><span class="button-group-title">Plant</span><div class="filter-buttons" id="plant-filters"></div></div>
+                <div class="d-flex flex-column" id="type-filter-container"><span class="button-group-title">내/외자</span><div class="filter-buttons" id="type-filters"></div></div>
+                <div class="d-flex flex-column" id="biz-type-filter-container"><span class="button-group-title">업태</span><div class="filter-buttons" id="biz-type-filters"></div></div>
+                <div class="d-flex flex-column" id="subcontract-filter-container"><span class="button-group-title">하도급 분류</span><div class="filter-buttons" id="subcontract-filters"></div></div>
+                <div class="d-flex flex-column" id="listing-status-filter-container"><span class="button-group-title">상장 구분</span><div class="filter-buttons" id="listing-status-filters"></div></div>
+                <div class="d-flex flex-column" id="revenue-filter-container"><span class="button-group-title">협력사 매출액</span><div class="filter-buttons" id="revenue-filters"></div></div>
+                <div class="ms-auto d-flex align-items-center">
+                    <button id="our-vendor-btn" class="btn btn-sm btn-primary filter-btn me-1" style="font-weight: 700 !important; height: 28px;">당사 Vendor 조회</button>
+                    <button id="ipc-vendor-btn" class="btn btn-sm btn-outline-primary filter-btn me-2" style="font-weight: 700 !important; height: 28px;">IPC Vendor 조회</button>
+                    <button id="clear-all-filters-btn" class="btn btn-sm btn-outline-danger btn-reset filter-btn me-3" style="height: 28px;">필터 초기화</button>
+                </div>
+            </div>
+            <div id="alert-placeholder" class="mt-3"></div>
+        </div>
+        
+        <div class="table-section">
+            <table class="table table-hover">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+            <!-- 리스트 하단에 표시되는 가시성 높은 로딩 바 -->
+            <div id="table-loading-indicator" class="text-center py-5" style="display: none; background: white;">
+                <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+                <div class="mt-3 fw-bold text-secondary" style="font-size: 1rem;">IPC Vendor 관리대장 로딩... </div>
+            </div>
+        </div>
+        <!-- 하단 상시 주석 가이드문 영역 -->
+        <div id="bottom-notice-guide" class="bottom-notice-guide py-2 px-4" style="flex-shrink: 0; border-top: 1px solid #e9ecef; background-color: #fafbfc; font-size: 0.8rem; color: #6c757d; line-height: 1.5; display: none;">
+            - IPC Vendor 는 '삼성전자 기준' 으로 정규 협력사 이나 <strong>'삼성메디슨 기준' 으로는 비정규 협력사임</strong>. 당사의 협력업체 관리규칙 상 <strong>각 IPC가 정규 협력사</strong>이고, IPC Vendor는 비정규 협력사이므로 신규등록/거래종결 등의 관리절차 비대상. 최근 1년간 거래가 없던 협력사는 편의상 "종결" 로 표시했으나 실제 거래종결 절차 진행 없음.
+        </div>
+    </div>
+</main>
+
+<!-- 상세 조회 모달 팝업 영역 (가로너비 80% 축소급 74vw 및 3/5, 2/5 연동 레이아웃) -->
+<div class="modal fade" id="partnerDetailModal" tabindex="-1" aria-labelledby="partnerDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 74vw !important; width: 74vw !important;">
+        <div class="modal-content" style="border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); border: none;">
+            <div class="modal-header" style="background-color: var(--samsung-blue); color: #ffffff; border-top-left-radius: 12px; border-top-right-radius: 12px; padding: 15px 25px;">
+                <h5 class="modal-title fw-bold" id="partnerDetailModalLabel">협력사 정보</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" style="background-color: #fdfefe; max-height: 88vh; overflow-y: auto;">
+                
+                <!-- 1. 기본정보 섹션 (우측 지도영역과 수직 높이 완벽 정렬) -->
+                <h6 style="color: var(--samsung-blue); font-weight: 800; font-size: 1.15rem; margin-bottom: 12px; margin-left: 2px;">■ 협력사 기본정보</h6>
+                <div class="partner-modal-row">
+                    <div class="partner-modal-row-left">
+                        <div class="table-responsive" style="border-radius: 6px; overflow: hidden; border: none;">
+                            <table class="table partner-detail-table mb-0">
+                                <tbody id="partner-detail-tbody">
+                                    <!-- JS에서 동적으로 삽입 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="partner-modal-row-right" style="position: relative;">
+                        <!-- 지도 위치 선택 버튼 그룹 -->
+                        <div id="map-location-btn-group" class="btn-group btn-group-sm position-absolute" style="top: 10px; right: 10px; z-index: 105; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                            <button type="button" id="btn-map-head" class="btn btn-primary fw-bold btn-map-active" onclick="switchMapLocation('head')">본사</button>
+                            <button type="button" id="btn-map-factory1" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory1')">공장1</button>
+                            <button type="button" id="btn-map-factory2" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory2')">공장2</button>
+                            <button type="button" id="btn-map-factory3" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory3')">공장3</button>
+                            <button type="button" id="btn-map-factory4" class="btn btn-outline-primary fw-bold" onclick="switchMapLocation('factory4')">공장4</button>
+                        </div>
+                        <div id="partner-map-container" style="flex-grow: 1; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.03); height: 100%;">
+                            <!-- 지도 iframe -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 거래정보 섹션 (우측 차트영역과 수직 높이 완벽 정렬) -->
+                <h6 style="color: var(--samsung-blue); font-weight: 800; font-size: 1.15rem; margin-top: 20px; margin-bottom: 12px; margin-left: 2px; display: flex; align-items: baseline;">
+                    ■ 협력사 거래정보
+                    <span style="font-size: 0.81rem; color: #888; font-weight: normal; margin-left: 8px;">(백만원)</span>
+                </h6>
+                <div class="partner-modal-row">
+                    <div class="partner-modal-row-left">
+                        <div class="table-responsive" style="border-radius: 6px; overflow: hidden; border: none;">
+                            <table class="table partner-detail-table mb-0 text-center" style="vertical-align: middle;" id="partner-purchase-table">
+                                <!-- 연도 및 금액 6열 동적 조립 삽입 -->
+                            </table>
+                        </div>
+                    </div>
+                    <div class="partner-modal-row-right">
+                        <div id="partner-chart-container" style="flex-grow: 1; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); display: flex; flex-direction: column; height: 100%;">
+                            <canvas id="partner-trend-chart" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 재무정보 섹션 (우측 공란 유지) -->
+                <h6 style="color: var(--samsung-blue); font-weight: 800; font-size: 1.15rem; margin-top: 20px; margin-bottom: 12px; margin-left: 2px; display: flex; align-items: baseline;">
+                    ■ 협력사 재무정보
+                    <span style="font-size: 0.81rem; color: #888; font-weight: normal; margin-left: 8px;">(백만원)</span>
+                </h6>
+                <div class="partner-modal-row" style="margin-bottom: 0;">
+                    <div class="partner-modal-row-left">
+                        <div class="table-responsive" style="border-radius: 6px; overflow: hidden; border: none;">
+                            <table class="table partner-detail-table mb-0 text-center" style="vertical-align: middle;" id="partner-finance-table">
+                                <!-- 매출액, 영업이익, 당기순이익, 이익잉여금 6열 동적 조립 삽입 -->
+                            </table>
+                        </div>
+                    </div>
+                    <div class="partner-modal-row-right">
+                        <!-- 공란 -->
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer" style="background-color: #f8f9fa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: 12px 25px; display: flex; align-items: center; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary fw-bold px-4 py-2" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IPC 거래선 팝업 모달 영역 (가로너비 90% 와이드형 및 테이블 단독 적재) -->
+<div class="modal fade" id="ipcVendorModal" tabindex="-1" aria-labelledby="ipcVendorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw !important; width: 90vw !important;">
+        <div class="modal-content" style="border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); border: none; height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background-color: var(--samsung-blue); color: #ffffff; border-top-left-radius: 12px; border-top-right-radius: 12px; padding: 15px 25px; flex-shrink: 0;">
+                <h5 class="modal-title fw-bold" id="ipcVendorModalLabel">IPC 거래선 목록</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" style="flex-grow: 1; overflow: auto; display: flex; flex-direction: column; background-color: #fdfefe;">
+                <!-- IPC Vendor Table with scrolling -->
+                <div style="flex-grow: 1; overflow: auto; position: relative; border: 1px solid #dee2e6; border-radius: 8px;">
+                    <table class="table table-hover mb-0" id="ipc-vendor-table" style="font-size: 0.82rem;">
+                        <thead id="ipc-table-head" style="position: sticky; top: 0; z-index: 100;"></thead>
+                        <tbody id="ipc-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #f8f9fa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: 12px 25px; flex-shrink: 0;">
+                <button type="button" class="btn btn-secondary fw-bold px-4 py-2" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    var initialPageData = <?!= initialDataString ?>;
+    let allRawData = [];
+    let currentFilters = {};
+    let chartInstances = {};
+    let partnerChartInstance = null; // 상세조회 모달 내부 그래프 인스턴스 전역 관리
+    let ipcVendorsData = null; // IPC 거래선 데이터 캐싱용 전역 변수
+    let currentPartnerType = '당사 거래선';
+    
+    const PAGE_CONSTANTS = { MAP_COL_NAME_IN_SHEET: 'Map', NO_FILTER_START_COL: 31 };
+    let currentSort = { index: null, direction: 'none' }; 
+    
+    function getColumnWidth(col) {
+        if (col === 3) return '120px';        // 구분
+        if (col === 4 || col === 5) return '110px';  // 정규등록일자, 거래종결일자
+        if (col === 6) return '100px';       // Vendor
+        if (col === 7) return '280px';       // Vendor Desc
+        if (col === 8) return '110px';       // 당사 거래 Plant
+        if (col === 9) return '100px';       // 내/외자
+        if (col === 10) return '100px';      // 생산유형
+        if (col === 11) return '100px';      // 업태
+        if (col === 12) return '100px';      // 품목군
+        if (col === 13) return '220px';      // 세부 품목
+        if (col === 15) return '110px';      // 하도급 분류
+        if (col === 16) return '200px';      // 대표자
+        if (col === 17) return '110px';      // 상장 여부
+        if (col === 18) return '110px';      // 설립일자
+        if (col === 19) return '100px';      // 직원수
+        if (col === 20 || col === 21) return '140px'; // 법인등록번호, 사업자등록번호
+        if (col === 22) return '380px';      // 본사 주소
+        if (col === 98) return '150px';      // 전자 거래사업부
+        if (col >= 26 && col <= 30) return '110px';  // 계약 관련 열들
+        if (col >= 31 && col <= 48) return '100px';  // 당사구매액 '13년~'30년
+        if (col >= 58 && col <= 97) return '110px';  // 매출액, 영업이익, 당기순이익, 이익잉여금
+        if (col === 99 || col === 102 || col === 105 || col === 108) return '380px'; // 공장 주소
+        if (col >= 111) return '110px';      // Etc
+        return '120px';
+    }
+    
+    function renderFilterButtons(containerId, options, current, type) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = (options || []).map(opt =>
+            `<button type="button" class="btn btn-sm ${opt === current ? 'btn-primary' : 'btn-outline-primary'} filter-btn" data-type="${type}" data-filter="${opt}">${opt}</button>`
+        ).join('');
+    }
+    
+    function getSummaryTitleForCol(col) {
+        if (col >= 3 && col <= 5) return '거래정보';
+        if (col >= 6 && col <= 25) return '기본정보';
+        if (col >= 26 && col <= 30) return '계약정보';
+        if (currentPartnerType === '당사 거래선') {
+            if (col >= 31 && col <= 57) return '당사 구매액 (백만원)';
+            if (col >= 58 && col <= 67) return '매출액 (백만원)';
+            if (col >= 68 && col <= 77) return '영업이익 (백만원)';
+            if (col >= 78 && col <= 87) return '당기순이익 (백만원)';
+            if (col >= 88 && col <= 110) return '이익잉여금 (백만원)';
+            if (col >= 111) return 'Etc.';
+        } else {
+            // IPC 거래선 mode
+            if (col >= 31 && col <= 57) return '당사 구매액 (백만원)';
+            if (col === 99 || col === 102 || col === 105 || col === 108) return '공장주소';
+        }
+        return '기타';
+    }
+
+    function renderTableHeader(headers, constants) {
+        const tableHead = document.getElementById('table-head');
+        if (!headers || !headers.main || headers.main.length === 0) { tableHead.innerHTML = ''; return; }
+        const { summary, main } = headers;
+        
+        let summaryRowHtml = '<tr class="summary-header">';
+        let mainHeaderRow = '<tr class="main-header-row">';
+        let filterRow = '<tr class="filter-row">';
+        
+        if (currentPartnerType === '당사 거래선') {
+            // Keep the exact format of the original 260720_153846 code!
+            let currentTotalCol = 0;
+            summary.forEach((item) => {
+                if (!item) return;
+                let title = item.title;
+                let span = item.span;
+                if (currentTotalCol === 0) { title = "거래정보"; span = 5; } 
+                else if (currentTotalCol === 5) { title = "기본정보"; span = item.span - 2; }
+                const isSticky = currentTotalCol < 5; 
+                const stickyClass = isSticky ? `sticky-col col-fix-${currentTotalCol + 1}` : '';
+                summaryRowHtml += `<th class="${stickyClass}" colspan="${span}">${title}</th>`; 
+                currentTotalCol += span;
+            });
+            summaryRowHtml += '</tr>';
+            
+            mainHeaderRow += main.map((h, i) => {
+                const isSticky = i < 5;
+                const stickyClass = isSticky ? `sticky-col col-fix-${i+1}` : '';
+                const colIdx = h.originalColumn;
+                let sortClass = '';
+                let sortEvent = '';
+                if (i === 1 || i === 2 || (colIdx >= 31 && colIdx <= 117)) {
+                    sortClass = 'sortable sort-icon';
+                    if (currentSort.index === i) {
+                        if (currentSort.direction === 'asc') sortClass += ' sort-asc';
+                        else if (currentSort.direction === 'desc') sortClass += ' sort-desc';
+                    }
+                    sortEvent = `onclick="handleSort(${i})"`;
+                }
+                let customStyle = '';
+                if (!isSticky) {
+                    const width = getColumnWidth(colIdx);
+                    customStyle = `style="width: ${width} !important; min-width: ${width} !important; max-width: ${width} !important;"`;
+                }
+                return `<th class="${stickyClass} ${sortClass}" ${sortEvent} ${customStyle}>${h.name}</th>`;
+            }).join('') + '</tr>';
+            
+            filterRow += main.map((h, i) => {
+                const isSticky = i < 5;
+                const stickyClass = isSticky ? `sticky-col col-fix-${i+1}` : '';
+                if (i === 0) return `<th class="${stickyClass}"></th>`;
+                if (h.name === constants.MAP_COL_NAME_IN_SHEET) return `<th class="${stickyClass}"></th>`;
+                const colIdx = h.originalColumn;
+                const isNumeric = (colIdx >= 31 && colIdx <= 97);
+                const isEtc = (colIdx >= 98 && colIdx <= 117);
+                let customStyle = '';
+                if (!isSticky) {
+                    const width = getColumnWidth(colIdx);
+                    customStyle = `style="width: ${width} !important; min-width: ${width} !important; max-width: ${width} !important;"`;
+                }
+                if (isNumeric) {
+                    return `<th class="${stickyClass}" ${customStyle}><input type="text" class="filter-input" data-index="${i}" placeholder=">=100"></th>`;
+                } else if (colIdx < 31 || isEtc) {
+                    const placeholderText = (i === 1) ? '필터' : '';
+                    return `<th class="${stickyClass}" ${customStyle}><input type="text" class="filter-input" data-index="${i}" placeholder="${placeholderText}"></th>`;
+                }
+                return `<th class="${stickyClass}" ${customStyle}></th>`;
+            }).join('') + '</tr>';
+            
+        } else {
+            // IPC Vendor mode (Hide subcontract col 15, listing status col 17, corp num col 20, biz num col 21, and contract cols 28, 29, 30!)
+            const keptCols = [];
+            main.forEach((h, idx) => {
+                const col = h.originalColumn;
+                const isHidden = (col === 15 || col === 17 || col === 20 || col === 21 || col === 28 || col === 29 || col === 30 || (col >= 58 && col <= 97) || (col >= 111 && col <= 117));
+                if (!isHidden) {
+                    keptCols.push({ originalIndex: idx, header: h, originalColumn: col });
+                }
+            });
+            
+            // summaryRowHtml for IPC Vendor (A1:E1 거래정보 colspan=5, F1:P1 기본정보 colspan=11, Q1:R1 계약정보 colspan=2, 그 뒤는 18열 당사구매액, 그 뒤는 4열 공장주소)
+            const summaryGroups = [
+                { title: '거래정보', span: 5, startIndex: 0 },
+                { title: '기본정보', span: 11, startIndex: 5 }, // Col 15 & 17 hidden, so basic info decreases to 11
+                { title: '계약정보', span: 2, startIndex: 16 }, // Col 28, 29, 30 hidden, so contract info decreases to 2
+                { title: '당사 구매액 (백만원)', span: 18, startIndex: 18 }, // shifted left by 3 more
+                { title: '공장주소', span: 4, startIndex: 36 } // shifted left by 3 more
+            ];
+            
+            summaryGroups.forEach((group) => {
+                const isSticky = group.startIndex < 5;
+                const stickyClass = isSticky ? `sticky-col col-fix-${group.startIndex + 1}` : '';
+                summaryRowHtml += `<th class="${stickyClass}" colspan="${group.span}">${group.title}</th>`; 
+            });
+            summaryRowHtml += '</tr>';
+            
+            // mainHeaderRow for IPC Vendor
+            keptCols.forEach((colObj, visualIndex) => {
+                const isSticky = visualIndex < 5;
+                const stickyClass = isSticky ? `sticky-col col-fix-${visualIndex+1}` : '';
+                const idx = colObj.originalIndex;
+                const colIdx = colObj.originalColumn;
+                let sortClass = '';
+                let sortEvent = '';
+                if (idx === 1 || idx === 2 || (colIdx >= 31 && colIdx <= 117)) {
+                    sortClass = 'sortable sort-icon';
+                    if (currentSort.index === idx) {
+                        if (currentSort.direction === 'asc') sortClass += ' sort-asc';
+                        else if (currentSort.direction === 'desc') sortClass += ' sort-desc';
+                    }
+                    sortEvent = `onclick="handleSort(${idx})"`;
+                }
+                let customStyle = '';
+                if (!isSticky) {
+                    const width = getColumnWidth(colIdx);
+                    customStyle = `style="width: ${width} !important; min-width: ${width} !important; max-width: ${width} !important;"`;
+                }
+                mainHeaderRow += `<th class="${stickyClass} ${sortClass}" ${sortEvent} ${customStyle}>${colObj.header.name}</th>`;
+            });
+            mainHeaderRow += '</tr>';
+            
+            // filterRow for IPC Vendor
+            keptCols.forEach((colObj, visualIndex) => {
+                const idx = colObj.originalIndex;
+                const isSticky = idx < 5;
+                const stickyClass = isSticky ? `sticky-col col-fix-${idx+1}` : '';
+                const colIdx = colObj.originalColumn;
+                
+                let customStyle = '';
+                if (!isSticky) {
+                    const width = getColumnWidth(colIdx);
+                    customStyle = `style="width: ${width} !important; min-width: ${width} !important; max-width: ${width} !important;"`;
+                }
+                
+                if (visualIndex === 0) {
+                    filterRow += `<th class="${stickyClass}" ${customStyle}></th>`;
+                } else if (colObj.header.name === constants.MAP_COL_NAME_IN_SHEET) {
+                    filterRow += `<th class="${stickyClass}" ${customStyle}></th>`;
+                } else {
+                    const isNumeric = (colIdx >= 31 && colIdx <= 97);
+                    const isEtc = (colIdx >= 98 && colIdx <= 117);
+                    if (isNumeric) {
+                        filterRow += `<th class="${stickyClass}" ${customStyle}><input type="text" class="filter-input" data-index="${idx}" placeholder=">=100"></th>`;
+                    } else if (colIdx < 31 || isEtc) {
+                        const placeholderText = (visualIndex === 1) ? '필터' : '';
+                        filterRow += `<th class="${stickyClass}" ${customStyle}><input type="text" class="filter-input" data-index="${idx}" placeholder="${placeholderText}"></th>`;
+                    } else {
+                        filterRow += `<th class="${stickyClass}" ${customStyle}></th>`;
+                    }
+                }
+            });
+            filterRow += '</tr>';
+        }
+        
+        tableHead.innerHTML = summaryRowHtml + mainHeaderRow + filterRow;
+    }
+    
+    function handleSort(originalIndex) {
+        if (!allRawData) return;
+        if (currentSort.index === originalIndex) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.index = originalIndex;
+            currentSort.direction = 'asc';
+        }
+        // Pass either initialPageData or window.ipcVendorsData's headers
+        const headers = (currentPartnerType === 'IPC 거래선' && window.ipcVendorsData) ? window.ipcVendorsData.headers : initialPageData.headers;
+        renderTableHeader(headers, PAGE_CONSTANTS);
+        applyAllFilters();
+    }
+    function applyAllFilters() {
+        if (!allRawData) return;
+        
+        let filtered = allRawData.filter(item => {
+            const f = item.filters;
+            if (currentFilters.status !== '전체' && f.status !== currentFilters.status) return false;
+            if (currentFilters.plant !== '전체' && f.plant !== currentFilters.plant) return false;
+            if (currentFilters.type !== '전체' && f.type !== currentFilters.type) return false;
+            if (currentFilters.bizType !== '전체' && f.bizType !== currentFilters.bizType) return false;
+            if (currentFilters.revenue !== '전체' && f.revenue !== currentFilters.revenue) return false;
+            if (currentFilters.listingStatus !== '전체' && f.listingStatus !== currentFilters.listingStatus) return false;
+            if (currentFilters.subcontract !== '전체' && !f.subcontract.includes(currentFilters.subcontract)) return false;
+            return true;
+        });
+        const textFilters = Array.from(document.querySelectorAll('.card-custom .filter-input')).map(input => ({
+            value: input.value.toLowerCase().trim(), index: parseInt(input.dataset.index, 10),
+            isNumeric: input.classList.contains('filter-input-numeric')
+        })).filter(f => f.value !== '' && !isNaN(f.index));
+        if (textFilters.length > 0) {
+            filtered = filtered.filter(item => 
+                textFilters.every(filter => {
+                    const cellValue = String(item.values[filter.index] || '');
+                    if (filter.isNumeric) return evaluateNumericCondition(cellValue, filter.value);
+                    else return cellValue.toLowerCase().includes(filter.value);
+                })
+            );
+        }
+        if (currentSort.index !== null && currentSort.direction !== 'none') {
+            const idx = currentSort.index;
+            filtered.sort((a, b) => {
+                let valA = String(a.values[idx] || '').trim();
+                let valB = String(b.values[idx] || '').trim();
+                const numA = parseFloat(valA.replace(/,/g, ''));
+                const numB = parseFloat(valB.replace(/,/g, ''));
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return currentSort.direction === 'asc' ? numA - numB : numB - numA;
+                }
+                return currentSort.direction === 'asc' ? valA.localeCompare(valB, undefined, {numeric: true}) : valB.localeCompare(valA, undefined, {numeric: true});
+            });
+        }
+        renderTableBody(filtered, initialPageData.headers, PAGE_CONSTANTS);
+        updateDashboardCharts(filtered);
+    }
+    function resetAllFilters() {
+        document.querySelectorAll('.card-custom .filter-input').forEach(input => input.value = '');
+        currentSort = { index: null, direction: 'none' };
+        
+        currentFilters = {
+            status: (currentPartnerType === 'IPC 거래선' ? '비정규' : '정규'), 
+            plant: '전체', type: '전체', bizType: '전체', subcontract: '전체', listingStatus: '전체', revenue: '전체'
+        };
+        
+        const headers = (currentPartnerType === 'IPC 거래선' && window.ipcVendorsData) ? window.ipcVendorsData.headers : initialPageData.headers;
+        buildAllFilterButtons(initialPageData.filterOptions);
+        renderTableHeader(headers, PAGE_CONSTANTS);
+        document.querySelectorAll('.card-custom .filter-input').forEach(input => input.onkeyup = applyTextFiltersOnKey);
+        applyAllFilters();
+    }
+    
+    // 협력사 상세 정보 더블클릭 모달 표출 함수
+    function showPartnerDetail(item) {
+        if (!item) return;
+        const headers = initialPageData.headers.main;
+        
+        // 특정 컬럼 데이터 조회 및 마스킹/폴백 헬퍼 함수
+        function getCell(index, fallbackName, labelOverride) {
+            const headerName = labelOverride || (headers[index] ? headers[index].name : fallbackName);
+            let value = item.values[index] || '';
+            
+            if (value === 'MASKED_SECURE_DATA') {
+                value = '<span class="text-danger fw-bold">비공개</span>';
+            }
+            return { name: headerName, val: value || '-' };
+        }
+        
+        // 1. 기본정보 핵심 지정 필드 캡처 (0-based COLUMN_MAPPING 인덱스 정밀 수치 매핑)
+        const f_H = getCell(3, 'Vendor');                            // F열(6열): Vendor (COLUMN_MAPPING 인덱스 3)
+        const f_I = getCell(4, 'Vendor Desc');                       // G열(7열): Vendor Desc (COLUMN_MAPPING 인덱스 4)
+        const f_R = getCell(12, '대표자');                            // P열(16열): 대표자 (COLUMN_MAPPING 인덱스 12)
+        const f_BW = getCell(14, '설립일자');                         // R열(18열): 설립일자 (COLUMN_MAPPING 인덱스 14)
+        const f_V = getCell(18, '본사 주소');                         // V열(22열): 본사 주소 (COLUMN_MAPPING 인덱스 18)
+        const f_BY = getCell(83, '공장지 주소1');                     // CU열(99열): 공장지 주소1 (COLUMN_MAPPING 인덱스 83 - 1칸 왼쪽 자동 시프트)
+        const f_BZ = getCell(84, '공장지 주소2');                     // CV열(102열): 공장지 주소2 (COLUMN_MAPPING 인덱스 84 - 1칸 왼쪽 자동 시프트)
+        const f_BY3 = getCell(85, '공장지 주소3');                    // DA열(105열): 공장지 주소3 (COLUMN_MAPPING 인덱스 85 - 1칸 왼쪽 자동 시프트)
+        const f_BZ4 = getCell(86, '공장지 주소4');                    // DD열(108열): 공장지 주소4 (COLUMN_MAPPING 인덱스 86 - 1칸 왼쪽 자동 시프트)
+        const f_BX = getCell(15, '직원수');                           // S열(19열): 직원수 (COLUMN_MAPPING 인덱스 15)
+        const f_BV = getCell(19, '전자 거래사업부');                   // CT열(98열): 전자 거래사업부 (COLUMN_MAPPING 인덱스 19 - 전방 재배치!)
+        const f_S = getCell(13, '상장 여부', '상장 여부');             // Q열(17열): 상장 여부 (라벨 강제 변경, COLUMN_MAPPING 인덱스 13)
+        const f_Q = getCell(11, '하도급 분류');                        // O열(15열): 하도급 분류 (COLUMN_MAPPING 인덱스 11)
+        const f_T = getCell(16, '법인등록번호');                       // T열(20열): 법인등록번호 (COLUMN_MAPPING 인덱스 16)
+        const f_U = getCell(17, '사업자등록번호', '사업자등록번호');     // U열(21열): 사업자등록번호 (라벨 강제 변경, COLUMN_MAPPING 인덱스 17)
+        const f_J = getCell(5, '당사 거래 Plant', '당사 거래 Plant');  // H열(8열): 당사 거래 Plant (라벨 강제 변경, COLUMN_MAPPING 인덱스 5)
+        const f_M = getCell(8, '업태');                               // K열(11열): 업태 (COLUMN_MAPPING 인덱스 8)
+        const f_N = getCell(9, '품목군');                             // L열(12열): 품목군 (COLUMN_MAPPING 인덱스 9)
+        const f_O = getCell(10, '세부 품목');                         // M열(13열): 세부 품목 (COLUMN_MAPPING 인덱스 10)
+        const f_D = getCell(1, '정규등록일자', '정규등록일자');         // D열(4열): 정규등록일자 (라벨 강제 변경, COLUMN_MAPPING 인덱스 1)
+        const f_E = getCell(2, '거래종결일자', '거래종결일자');         // E열(5열): 거래종결일자 (라벨 강제 변경, COLUMN_MAPPING 인덱스 2)
+        const f_AA = getCell(21, '계약ID');                          // AA열(27열): 계약ID (COLUMN_MAPPING 인덱스 21)
+        const f_Z = getCell(20, '계약체결일자', '계약체결일자');        // Z열(26열): 계약체결일자 (COLUMN_MAPPING 인덱스 20)
+        
+        // 2. 공장1, 공장2, 공장3, 공장4 존재 유무에 따른 동적 테이블 행 구성 (공백이거나 "-" 인 경우 좌측 목록에서 전격 생략)
+        const byAddress = String(f_BY.val).trim();
+        const hasFactory1Row = byAddress !== '' && byAddress !== '-' && byAddress !== 'MASKED_SECURE_DATA';
+        const f1RowHtml = hasFactory1Row ? `
+            <tr>
+                <td class="partner-detail-label">${f_BY.name}</td>
+                <td colspan="3" style="word-break: break-all; white-space: normal;">${f_BY.val}</td>
+            </tr>` : '';
+
+        const bzAddress = String(f_BZ.val).trim();
+        const hasFactory2Row = bzAddress !== '' && bzAddress !== '-' && bzAddress !== 'MASKED_SECURE_DATA';
+        const f2RowHtml = hasFactory2Row ? `
+            <tr>
+                <td class="partner-detail-label">${f_BZ.name}</td>
+                <td colspan="3" style="word-break: break-all; white-space: normal;">${f_BZ.val}</td>
+            </tr>` : '';
+
+        const by3Address = String(f_BY3.val).trim();
+        const hasFactory3Row = by3Address !== '' && by3Address !== '-' && by3Address !== 'MASKED_SECURE_DATA';
+        const f3RowHtml = hasFactory3Row ? `
+            <tr>
+                <td class="partner-detail-label">${f_BY3.name}</td>
+                <td colspan="3" style="word-break: break-all; white-space: normal;">${f_BY3.val}</td>
+            </tr>` : '';
+
+        const bz4Address = String(f_BZ4.val).trim();
+        const hasFactory4Row = bz4Address !== '' && bz4Address !== '-' && bz4Address !== 'MASKED_SECURE_DATA';
+        const f4RowHtml = hasFactory4Row ? `
+            <tr>
+                <td class="partner-detail-label">${f_BZ4.name}</td>
+                <td colspan="3" style="word-break: break-all; white-space: normal;">${f_BZ4.val}</td>
+            </tr>` : '';
+
+        // '제목(17.5%):내용(32.5%)' 대칭 정렬 및 '본사 주소 한 행 전체 점유' 테이블 HTML 조립
+        const tableHtml = `
+            <tr>
+                <td class="partner-detail-label" style="width: 17.5% !important;">${f_H.name}</td>
+                <td style="width: 32.5% !important;">${f_H.val}</td>
+                <td class="partner-detail-label" style="width: 17.5% !important;">${f_I.name}</td>
+                <td style="width: 32.5% !important;">${f_I.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_R.name}</td>
+                <td>${f_R.val}</td>
+                <td class="partner-detail-label">${f_BW.name}</td>
+                <td>${f_BW.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_V.name}</td>
+                <td colspan="3" style="word-break: break-all; white-space: normal;">${f_V.val}</td>
+            </tr>
+            ${f1RowHtml}
+            ${f2RowHtml}
+            ${f3RowHtml}
+            ${f4RowHtml}
+            <tr>
+                <td class="partner-detail-label">${f_BX.name}</td>
+                <td>${f_BX.val}</td>
+                <td class="partner-detail-label">${f_BV.name}</td>
+                <td>${f_BV.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_S.name}</td>
+                <td>${f_S.val}</td>
+                <td class="partner-detail-label">${f_Q.name}</td>
+                <td>${f_Q.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_T.name}</td>
+                <td>${f_T.val}</td>
+                <td class="partner-detail-label">${f_U.name}</td>
+                <td>${f_U.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_J.name}</td>
+                <td>${f_J.val}</td>
+                <td class="partner-detail-label">${f_M.name}</td>
+                <td>${f_M.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_N.name}</td>
+                <td>${f_N.val}</td>
+                <td class="partner-detail-label">${f_O.name}</td>
+                <td>${f_O.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_D.name}</td>
+                <td>${f_D.val}</td>
+                <td class="partner-detail-label">${f_E.name}</td>
+                <td>${f_E.val}</td>
+            </tr>
+            <tr>
+                <td class="partner-detail-label">${f_AA.name}</td>
+                <td>${f_AA.val}</td>
+                <td class="partner-detail-label">${f_Z.name}</td>
+                <td>${f_Z.val}</td>
+            </tr>
+        `;
+        document.getElementById('partner-detail-tbody').innerHTML = tableHtml;
+        
+        // 3. 동적 지도 위치 데이터 캐싱
+        window.currentPartnerMapData = {
+            headLat: item.lat || '',
+            headLon: item.lon || '',
+            factory1Lat: item.factory1Lat || '',
+            factory1Lon: item.factory1Lon || '',
+            factory2Lat: item.factory2Lat || '',
+            factory2Lon: item.factory2Lon || '',
+            factory3Lat: item.factory3Lat || '',
+            factory3Lon: item.factory3Lon || '',
+            factory4Lat: item.factory4Lat || '',
+            factory4Lon: item.factory4Lon || '',
+            factory1Address: f_BY.val || '',
+            factory2Address: f_BZ.val || '',
+            factory3Address: f_BY3.val || '',
+            factory4Address: f_BZ4.val || ''
+        };
+
+        // 4. 지도 선택 버튼 활성화/비활성화 및 클래스/완전숨김 동적 제어
+        const updateFactoryButtonState = (btnId, addressVal) => {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            
+            const address = String(addressVal).trim();
+            const hasAddress = address !== '' && address !== '-' && address !== 'MASKED_SECURE_DATA';
+            
+            if (!hasAddress) {
+                btn.style.setProperty('display', 'none', 'important');
+                btn.classList.remove('btn-map-active');
+            } else {
+                btn.style.removeProperty('display');
+                btn.classList.add('btn-map-active');
+                btn.title = "클릭 시 해당 공장 지도로 이동합니다.";
+            }
+        };
+
+        updateFactoryButtonState('btn-map-factory1', f_BY.val);
+        updateFactoryButtonState('btn-map-factory2', f_BZ.val);
+        updateFactoryButtonState('btn-map-factory3', f_BY3.val);
+        updateFactoryButtonState('btn-map-factory4', f_BZ4.val);
+
+        // Default: 본사 지도로 강제 로드
+        switchMapLocation('head');
+        
+        // 5. 거래정보 - 당사 구매금액 (2011년 ~ 2030년) 가로 6칸 전용 복합 테이블 조립
+        const getPurchaseValueByYear = (yearStr) => {
+            const year = parseInt(yearStr);
+            if (year < 2013 || year > 2030) return '-';
+            const index = 25 + (year - 2013); // 2013년은 Index 25 (AE열)에 매핑됩니다.
+            let valObj = getCell(index, yearStr);
+            return valObj.val;
+        };
+
+        const purchaseGridHtml = `
+            <!-- Block 1: 2011년 ~ 2015년 -->
+            <tr class="no-border-bottom">
+                <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2011년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2012년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2013년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2014년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2015년</td>
+            </tr>
+            <tr class="no-border-top" style="border-bottom: 1px solid #dee2e6;">
+                <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2011')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2012')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2013')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2014')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2015')}</td>
+            </tr>
+            <!-- Block 2: 2016년 ~ 2020년 -->
+            <tr class="no-border-bottom">
+                <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2016년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2017년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2018년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2019년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2020년</td>
+            </tr>
+            <tr class="no-border-top" style="border-bottom: 1px solid #dee2e6;">
+                <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2016')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2017')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2018')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2019')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2020')}</td>
+            </tr>
+            <!-- Block 3: 2021년 ~ 2025년 -->
+            <tr class="no-border-bottom">
+                <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2021년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2022년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2023년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2024년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2025년</td>
+            </tr>
+            <tr class="no-border-top" style="border-bottom: 1px solid #dee2e6;">
+                <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2021')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2022')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2023')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2024')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2025')}</td>
+            </tr>
+            <!-- Block 4: 2026년 ~ 2030년 -->
+            <tr class="no-border-bottom">
+                <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2026년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2027년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2028년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2029년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2030년</td>
+            </tr>
+            <tr class="no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">구매금액</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2026')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2027')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2028')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2029')}</td>
+                <td style="width: 16.5% !important;">${getPurchaseValueByYear('2030')}</td>
+            </tr>
+        `;
+        document.getElementById('partner-purchase-table').innerHTML = purchaseGridHtml;
+        
+        // 그래프 데이터 빌딩 (2011 ~ 2030, 총 20개년도 매핑)
+        const yearsArray = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'];
+        const trendChartData = [];
+        
+        yearsArray.forEach((yr, i) => {
+            const year = parseInt(yr);
+            if (year < 2013 || year > 2030) {
+                trendChartData.push(null);
+            } else {
+                const index = 25 + (year - 2013); // 2013년은 Index 25 (AE열)에 매핑
+                if (item.values[index] === 'MASKED_SECURE_DATA') {
+                    trendChartData.push(null);
+                } else {
+                    const parsedVal = parseFloat(String(item.values[index] || '').replace(/,/g, ''));
+                    trendChartData.push(isNaN(parsedVal) ? null : parsedVal);
+                }
+            }
+        });
+
+        // 협력사의 실제 구매금액이 존재하는 첫 연도 찾기
+        let firstDataIndex = -1;
+        for (let i = 0; i < trendChartData.length; i++) {
+            if (trendChartData[i] !== null && trendChartData[i] > 0) {
+                firstDataIndex = i;
+                break;
+            }
+        }
+
+        let activeYears = yearsArray;
+        let activeChartData = trendChartData;
+        if (firstDataIndex !== -1) {
+            activeYears = yearsArray.slice(firstDataIndex);
+            activeChartData = trendChartData.slice(firstDataIndex);
+        }
+        
+        // Chart.js 구매액 추이 그래프 렌더링
+        if (partnerChartInstance) { partnerChartInstance.destroy(); }
+        const canvasCtx = document.getElementById('partner-trend-chart').getContext('2d');
+        partnerChartInstance = new Chart(canvasCtx, {
+            type: 'line',
+            data: {
+                labels: activeYears.map(yr => "'" + yr.substring(2)), // YYYY -> 'YY 포맷으로 변환
+                datasets: [{
+                    label: '구매액',
+                    data: activeChartData,
+                    borderColor: '#1428A0',
+                    backgroundColor: 'rgba(20, 40, 160, 0.08)',
+                    borderWidth: 2.8,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#1428A0',
+                    tension: 0.15,
+                    spanGaps: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { 
+                        display: true, 
+                        text: '당사 구매금액',
+                        font: { size: 16.5, weight: 'bold' },
+                        padding: { bottom: 10 } 
+                    },
+                    datalabels: {
+                        display: 'auto',
+                        align: 'top',
+                        anchor: 'center',
+                        offset: 5,
+                        color: '#495057',
+                        font: { size: 12.8, weight: 'bold' },
+                        formatter: (val) => {
+                            if (val === null || val === undefined) return '';
+                            return val.toLocaleString('ko-KR');
+                        }
+                    }
+                },
+                scales: {
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { font: { size: 13.6, weight: 'bold' } }
+                    },
+                    y: { 
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // 6. 재무정보 - 매출액, 영업이익, 당기순이익, 이익잉여금 (BF~CS열, index 43 ~ 82) 기입
+        const f_BA = getCell(43, '매출액 21'); const f_BB = getCell(44, '매출액 22'); const f_BC = getCell(45, '매출액 23'); const f_BD = getCell(46, '매출액 24'); const f_BE = getCell(47, '매출액 25');
+        const f_BA_26 = getCell(48, '매출액 26'); const f_BB_27 = getCell(49, '매출액 27'); const f_BC_28 = getCell(50, '매출액 28'); const f_BD_29 = getCell(51, '매출액 29'); const f_BE_30 = getCell(52, '매출액 30');
+
+        const f_BF = getCell(53, '영업이익 21'); const f_BG = getCell(54, '영업이익 22'); const f_BH = getCell(55, '영업이익 23'); const f_BI = getCell(56, '영업이익 24'); const f_BJ = getCell(57, '영업이익 25');
+        const f_BF_26 = getCell(58, '영업이익 26'); const f_BG_27 = getCell(59, '영업이익 27'); const f_BH_28 = getCell(60, '영업이익 28'); const f_BI_29 = getCell(61, '영업이익 29'); const f_BJ_30 = getCell(62, '영업이익 30');
+
+        const f_BK = getCell(63, '당기순이익 21'); const f_BL = getCell(64, '당기순이익 22'); const f_BM = getCell(65, '당기순이익 23'); const f_BN = getCell(64, '당기순이익 24'); const f_BO = getCell(67, '당기순이익 25');
+        const f_BK_26 = getCell(68, '당기순이익 26'); const f_BL_27 = getCell(69, '당기순이익 27'); const f_BM_28 = getCell(70, '당기순이익 28'); const f_BN_29 = getCell(71, '당기순이익 29'); const f_BO_30 = getCell(72, '당기순이익 30');
+
+        const f_BP = getCell(73, '이익잉여금 21'); const f_BQ = getCell(74, '이익잉여금 22'); const f_BR = getCell(75, '이익잉여금 23'); const f_BS = getCell(76, '이익잉여금 24'); const f_BT = getCell(77, '이익잉여금 25');
+        const f_BP_26 = getCell(78, '이익잉여금 26'); const f_BQ_27 = getCell(79, '이익잉여금 27'); const f_BR_28 = getCell(80, '이익잉여금 28'); const f_BS_29 = getCell(81, '이익잉여금 29'); const f_BT_30 = getCell(82, '이익잉여금 30');
+        
+        const financeHtml = `
+            <!-- Block 1: 2021년 ~ 2025년 -->
+            <tr class="no-border-bottom">
+                <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2021년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2022년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2023년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2024년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2025년</td>
+            </tr>
+            <tr class="no-border-bottom no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">매출액</td>
+                <td style="width: 16.5% !important;">${f_BA.val}</td>
+                <td style="width: 16.5% !important;">${f_BB.val}</td>
+                <td style="width: 16.5% !important;">${f_BC.val}</td>
+                <td style="width: 16.5% !important;">${f_BD.val}</td>
+                <td style="width: 16.5% !important;">${f_BE.val}</td>
+            </tr>
+            <tr class="no-border-bottom no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">영업이익</td>
+                <td style="width: 16.5% !important;">${f_BF.val}</td>
+                <td style="width: 16.5% !important;">${f_BG.val}</td>
+                <td style="width: 16.5% !important;">${f_BH.val}</td>
+                <td style="width: 16.5% !important;">${f_BI.val}</td>
+                <td style="width: 16.5% !important;">${f_BJ.val}</td>
+            </tr>
+            <tr class="no-border-bottom no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">당기순이익</td>
+                <td style="width: 16.5% !important;">${f_BK.val}</td>
+                <td style="width: 16.5% !important;">${f_BL.val}</td>
+                <td style="width: 16.5% !important;">${f_BM.val}</td>
+                <td style="width: 16.5% !important;">${f_BN.val}</td>
+                <td style="width: 16.5% !important;">${f_BO.val}</td>
+            </tr>
+            <tr class="no-border-top" style="border-bottom: 2px solid #dee2e6;">
+                <td class="partner-detail-label" style="width: 17.5% !important;">이익잉여금</td>
+                <td style="width: 16.5% !important;">${f_BP.val}</td>
+                <td style="width: 16.5% !important;">${f_BQ.val}</td>
+                <td style="width: 16.5% !important;">${f_BR.val}</td>
+                <td style="width: 16.5% !important;">${f_BS.val}</td>
+                <td style="width: 16.5% !important;">${f_BT.val}</td>
+            </tr>
+            <!-- Block 2: 2026년 ~ 2030년 -->
+            <tr class="no-border-bottom">
+                <td class="partner-detail-label" style="width: 17.5% !important;">Year</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2026년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2027년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2028년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2029년</td>
+                <td style="width: 16.5% !important; background-color: #f0f8ff !important; font-weight: bold; text-align: center; border: 1px solid #dee2e6;">2030년</td>
+            </tr>
+            <tr class="no-border-bottom no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">매출액</td>
+                <td style="width: 16.5% !important;">${f_BA_26.val}</td>
+                <td style="width: 16.5% !important;">${f_BB_27.val}</td>
+                <td style="width: 16.5% !important;">${f_BC_28.val}</td>
+                <td style="width: 16.5% !important;">${f_BD_29.val}</td>
+                <td style="width: 16.5% !important;">${f_BE_30.val}</td>
+            </tr>
+            <tr class="no-border-bottom no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">영업이익</td>
+                <td style="width: 16.5% !important;">${f_BF_26.val}</td>
+                <td style="width: 16.5% !important;">${f_BG_27.val}</td>
+                <td style="width: 16.5% !important;">${f_BH_28.val}</td>
+                <td style="width: 16.5% !important;">${f_BI_29.val}</td>
+                <td style="width: 16.5% !important;">${f_BJ_30.val}</td>
+            </tr>
+            <tr class="no-border-bottom no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">당기순이익</td>
+                <td style="width: 16.5% !important;">${f_BK_26.val}</td>
+                <td style="width: 16.5% !important;">${f_BL_27.val}</td>
+                <td style="width: 16.5% !important;">${f_BM_28.val}</td>
+                <td style="width: 16.5% !important;">${f_BN_29.val}</td>
+                <td style="width: 16.5% !important;">${f_BO_30.val}</td>
+            </tr>
+            <tr class="no-border-top">
+                <td class="partner-detail-label" style="width: 17.5% !important;">이익잉여금</td>
+                <td style="width: 16.5% !important;">${f_BP_26.val}</td>
+                <td style="width: 16.5% !important;">${f_BQ_27.val}</td>
+                <td style="width: 16.5% !important;">${f_BR_28.val}</td>
+                <td style="width: 16.5% !important;">${f_BS_29.val}</td>
+                <td style="width: 16.5% !important;">${f_BT_30.val}</td>
+            </tr>
+        `;
+        document.getElementById('partner-finance-table').innerHTML = financeHtml;
+        
+        // 최종 모달 표출
+        const detailModal = new bootstrap.Modal(document.getElementById('partnerDetailModal'));
+        detailModal.show();
+    }
+
+    // 7. 지도 다원(본사, 공장1, 공장2, 공장3, 공장4) 위치 전환 함수
+    window.switchMapLocation = function(type) {
+        const data = window.currentPartnerMapData;
+        if (!data) return;
+
+        // 버튼 활성/비활성 스타일 전환
+        const btnHead = document.getElementById('btn-map-head');
+        const btnFactory1 = document.getElementById('btn-map-factory1');
+        const btnFactory2 = document.getElementById('btn-map-factory2');
+        const btnFactory3 = document.getElementById('btn-map-factory3');
+        const btnFactory4 = document.getElementById('btn-map-factory4');
+
+        [btnHead, btnFactory1, btnFactory2, btnFactory3, btnFactory4].forEach(btn => {
+            if (btn) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            }
+        });
+
+        const activeBtn = document.getElementById('btn-map-' + (type === 'head' ? 'head' : type));
+        if (activeBtn) {
+            activeBtn.classList.remove('btn-outline-primary');
+            activeBtn.classList.add('btn-primary');
+        }
+
+        let lat = '', lon = '';
+        let label = '';
+        if (type === 'head') {
+            lat = data.headLat;
+            lon = data.headLon;
+            label = '본사';
+        } else if (type === 'factory1') {
+            lat = data.factory1Lat;
+            lon = data.factory1Lon;
+            label = '공장1';
+        } else if (type === 'factory2') {
+            lat = data.factory2Lat;
+            lon = data.factory2Lon;
+            label = '공장2';
+        } else if (type === 'factory3') {
+            lat = data.factory3Lat;
+            lon = data.factory3Lon;
+            label = '공장3';
+        } else if (type === 'factory4') {
+            lat = data.factory4Lat;
+            lon = data.factory4Lon;
+            label = '공장4';
+        }
+
+        const mapContainer = document.getElementById('partner-map-container');
+        if (lat && lon && String(lat).trim() !== '' && String(lon).trim() !== '') {
+            mapContainer.innerHTML = `
+                <iframe src="https://maps.google.com/maps?q=${lat},${lon}&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                        width="100%" height="100%" frameborder="0" style="border:0; min-height: 100px; display: block;" allowfullscreen>
+                </iframe>`;
+        } else {
+            mapContainer.innerHTML = `
+                <div class="text-center p-4">
+                    <svg width="36" height="42" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <div class="text-secondary fw-bold" style="font-size: 0.85rem; line-height: 1.4;">${label}의 위도/경도 좌표 정보가 없어<br><span style="font-weight: normal; font-size: 0.8rem; color: #a0a0a0;">지도를 표시할 수 없습니다.</span></div>
+                </div>`;
+        }
+    };
+
+    function renderTableBody(data, headers, constants) {
+        const tableBody = document.getElementById('table-body');
+        const mainHeaders = headers.main || [];
+        const mapHeaderIndex = mainHeaders.findIndex(h => h.name === constants.MAP_COL_NAME_IN_SHEET);
+        
+        // Determine kept columns first so we know how many columns to span if there's no data
+        const keptCols = [];
+        mainHeaders.forEach((h, idx) => {
+            const col = h.originalColumn;
+            const isHidden = (currentPartnerType === 'IPC 거래선') && (
+                col === 15 || col === 17 || col === 20 || col === 21 || col === 28 || col === 29 || col === 30 || 
+                (col >= 58 && col <= 97) || 
+                (col >= 111 && col <= 117)
+            );
+            if (!isHidden) {
+                keptCols.push({ originalIndex: idx, header: h, originalColumn: col });
+            }
+        });
+        
+        if (!data || data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="${keptCols.length}" class="text-center text-muted py-5">데이터 없음</td></tr>`;
+            return;
+        }
+        
+        tableBody.innerHTML = data.map((item, rowIdx) => {
+            const cellsHtml = keptCols.map((colObj, visualIndex) => {
+                const index = colObj.originalIndex;
+                const cell = item.values[index];
+                const header = colObj.header;
+                let alignClass = '';
+                if (header) {
+                    const col = header.originalColumn;
+                    // 가운데 정렬 대상
+                    if (
+                        (col >= 3 && col <= 6) || 
+                        (col >= 8 && col <= 13) || 
+                        col === 15 || col === 16 || col === 17 || 
+                        col === 18 || col === 19 || col === 20 || col === 21 ||
+                        col === 23 || 
+                        (col >= 26 && col <= 30) ||
+                        col === 98
+                    ) {
+                        alignClass = 'text-center-data';
+                    }
+                    // 오른쪽 정렬 대상 (당사구매액 31~48, 재무정보 58~97)
+                    else if ((col >= 31 && col <= 48) || (col >= 58 && col <= 97)) {
+                        alignClass = 'text-right';
+                    }
+                }
+                const isSticky = index < 5;
+                const stickyClass = isSticky ? `sticky-col col-fix-${index+1}` : '';
+                
+                const isMasked = cell === 'MASKED_SECURE_DATA';
+                const maskClass = isMasked ? 'masked-cell' : '';
+                const displayCell = isMasked ? '' : cell;
+                
+                let customStyle = '';
+                if (!isSticky && header) {
+                    const width = getColumnWidth(header.originalColumn);
+                    customStyle = `style="width: ${width} !important; min-width: ${width} !important; max-width: ${width} !important;"`;
+                }
+                
+                if (index === mapHeaderIndex && item.lat && item.lon) {
+                    return `<td class="${alignClass} ${stickyClass} ${maskClass}" ${customStyle}><a href="https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}" target="_blank" class="map-link">${displayCell || '[위치정보]'}</a></td>`;
+                }
+                
+                return `<td class="${alignClass} ${stickyClass} ${maskClass}" ${customStyle}>${displayCell}</td>`;
+            }).join('');
+            
+            return `<tr class="partner-row-tr" data-row-idx="${rowIdx}" style="cursor: pointer;">${cellsHtml}</tr>`;
+        }).join('');
+
+        // 더블클릭 이벤트 리스너 일괄 바인딩
+        document.querySelectorAll('.partner-row-tr').forEach(row => {
+            row.ondblclick = function() {
+                const idx = parseInt(this.dataset.rowIdx, 10);
+                showPartnerDetail(data[idx]);
+            };
+        });
+    }
+    function initDashboardCharts(meta) {
+        const grid = document.getElementById('dashboard-grid');
+        if (!grid || !meta) return;
+        grid.innerHTML = '';
+        Chart.register(ChartDataLabels);
+        
+        meta.forEach((chartInfo) => {
+            const chartWrapper = document.createElement('div');
+            chartWrapper.className = 'chart-container';
+            const canvas = document.createElement('canvas');
+            chartWrapper.appendChild(canvas);
+            grid.appendChild(chartWrapper);
+            
+            chartInstances[chartInfo.key] = new Chart(canvas, {
+                type: 'pie',
+                data: {
+                    labels: chartInfo.labels,
+                    datasets: [{
+                        data: new Array(chartInfo.labels.length).fill(0),
+                        backgroundColor: ['rgba(20, 40, 160, 0.7)', 'rgba(0, 157, 224, 0.7)', 'rgba(108, 117, 125, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(25, 135, 84, 0.7)', 'rgba(220, 53, 69, 0.7)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: chartInfo.title, font: { size: 14, weight: 'bold' } },
+                        legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10 } },
+                        datalabels: { color: '#fff', font: { weight: 'bold', size: 12 }, formatter: (v) => v > 0 ? v : null }
+                    }
+                }
+            });
+        });
+    }
+    function updateDashboardCharts(filteredData) {
+        const meta = initialPageData.dashboardMeta;
+        if (!meta) return;
+        
+        meta.forEach((chartInfo) => {
+            const chart = chartInstances[chartInfo.key];
+            if (!chart) return;
+            
+            const counts = {};
+            chartInfo.labels.forEach(label => counts[label] = 0);
+            
+            filteredData.forEach(row => {
+                const value = row.filters[chartInfo.key];
+                if (value in counts) {
+                    counts[value]++;
+                } else if (chartInfo.isSubcontract) {
+                    chartInfo.labels.forEach(label => {
+                        if (value.includes(label)) counts[label]++;
+                    });
+                }
+            });
+            
+            chart.data.datasets[0].data = chartInfo.labels.map(label => counts[label]);
+            chart.update();
+        });
+    }
+    function evaluateNumericCondition(cellValue, filterText) {
+        const strVal = String(cellValue).trim();
+        const numVal = parseFloat(strVal.replace(/,/g, ''));
+        let operator = null; let targetStr = filterText;
+        if (targetStr.startsWith('>=')) { operator = '>='; targetStr = targetStr.substring(2); }
+        else if (targetStr.startsWith('<=')) { operator = '<='; targetStr = targetStr.substring(2); }
+        else if (targetStr.startsWith('>')) { operator = '>'; targetStr = targetStr.substring(1); }
+        else if (targetStr.startsWith('<')) { operator = '<'; targetStr = targetStr.substring(1); }
+        else if (targetStr.startsWith('=')) { operator = '='; targetStr = targetStr.substring(1); }
+        if (operator) {
+            if (isNaN(numVal)) return false;
+            const targetNum = parseFloat(targetStr.replace(/,/g, ''));
+            if (isNaN(targetNum)) return true;
+            switch (operator) {
+                case '>=': return numVal >= targetNum;
+                case '<=': return numVal <= targetNum;
+                case '>': return numVal > targetNum;
+                case '<': return numVal < targetNum;
+                case '=': return numVal === targetNum;
+            }
+        } 
+        return strVal.toLowerCase().includes(filterText);
+    }
+    function applyTextFiltersOnKey() {
+        applyAllFilters();
+    }
+    
+    function handleFilterClick(e) {
+        const type = e.target.dataset.type;
+        const value = e.target.dataset.filter;
+        
+        currentFilters[type] = value;
+        
+        const siblings = e.target.parentNode.querySelectorAll('.filter-btn');
+        siblings.forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-primary');
+        });
+        e.target.classList.remove('btn-outline-primary');
+        e.target.classList.add('btn-primary');
+        
+        applyAllFilters();
+    }
+    function buildAllFilterButtons(options) {
+        renderFilterButtons('status-filters', ['전체', '정규', '비정규', '종결'], currentFilters.status, 'status');
+        renderFilterButtons('plant-filters', options.plants, currentFilters.plant, 'plant');
+        renderFilterButtons('type-filters', options.types, currentFilters.type, 'type');
+        renderFilterButtons('biz-type-filters', options.bizTypes, currentFilters.bizType, 'bizType');
+        renderFilterButtons('subcontract-filters', options.subcontracts, currentFilters.subcontract, 'subcontract');
+        renderFilterButtons('listing-status-filters', options.listingStatuses, currentFilters.listingStatus, 'listingStatus');
+        renderFilterButtons('revenue-filters', options.revenues, currentFilters.revenue, 'revenue');
+
+        document.querySelectorAll('.filter-buttons .filter-btn').forEach(btn => btn.onclick = handleFilterClick);
+    }
+    function renderPage(pageData) {
+        if (!pageData || !pageData.success) {
+            const loader = document.getElementById('loading-overlay');
+            if (loader) loader.style.display = 'none';
+            showAlert(pageData.message || "데이터 로딩 실패", "danger");
+            if (typeof renderHeaderUI === 'function') renderHeaderUI('', "협력업체 관리대장");
+            return;
+        }
+        
+        allRawData = pageData.allData; 
+        currentFilters = pageData.currentFilters || {
+            status: '전체', plant: '전체', type: '전체', bizType: '전체', subcontract: '전체', listingStatus: '전체', revenue: '전체'
+        };
+        if (!pageData.hasFullAccess) {
+            const tableArea = document.querySelector('.table-section');
+            if (tableArea) {
+                tableArea.classList.add('no-select-table');
+                tableArea.addEventListener('contextmenu', e => e.preventDefault());
+            }
+        }
+        
+        if (typeof renderHeaderUI === 'function') renderHeaderUI(pageData.userEmail, "협력업체 관리대장");
+        
+        buildAllFilterButtons(pageData.filterOptions);
+        renderTableHeader(pageData.headers, PAGE_CONSTANTS);
+        initDashboardCharts(pageData.dashboardMeta);
+        
+        applyAllFilters();
+        
+        document.querySelectorAll('.filter-input').forEach(input => input.onkeyup = applyTextFiltersOnKey);
+        document.getElementById('clear-all-filters-btn').onclick = resetAllFilters;
+        
+        const loader = document.getElementById('loading-overlay');
+        if (loader) {
+            loader.style.transition = "opacity 0.3s";
+            loader.style.opacity = "0";
+            setTimeout(() => loader.style.display = 'none', 300);
+        }
+    }
+
+    function switchToPartnerType(type) {
+        if (currentPartnerType === type) return;
+        currentPartnerType = type;
+        
+        currentSort = { index: null, direction: 'none' };
+        
+        // Clear only text filter inputs, while preserving active filter button states (like '정규' status)
+        document.querySelectorAll('.card-custom .filter-input').forEach(input => input.value = '');
+        
+        const ourVendorBtn = document.getElementById('our-vendor-btn');
+        const ipcVendorBtn = document.getElementById('ipc-vendor-btn');
+        const typeFilter = document.getElementById('type-filter-container');
+        const subcontractFilter = document.getElementById('subcontract-filter-container');
+        const listingStatusFilter = document.getElementById('listing-status-filter-container');
+        const revenueFilter = document.getElementById('revenue-filter-container');
+        const bottomNotice = document.getElementById('bottom-notice-guide');
+        
+        // Reset hidden filters to '전체' to prevent conflicts
+        currentFilters.type = '전체';
+        currentFilters.subcontract = '전체';
+        currentFilters.listingStatus = '전체';
+        currentFilters.revenue = '전체';
+        
+        if (type === '당사 거래선') {
+            if (ourVendorBtn) {
+                ourVendorBtn.classList.remove('btn-outline-primary');
+                ourVendorBtn.classList.add('btn-primary');
+            }
+            if (ipcVendorBtn) {
+                ipcVendorBtn.classList.remove('btn-primary');
+                ipcVendorBtn.classList.add('btn-outline-primary');
+            }
+            if (typeFilter) {
+                typeFilter.style.display = 'flex';
+            }
+            if (subcontractFilter) {
+                subcontractFilter.style.display = 'flex';
+            }
+            if (listingStatusFilter) {
+                listingStatusFilter.style.display = 'flex';
+            }
+            if (revenueFilter) {
+                revenueFilter.style.display = 'flex';
+            }
+            if (bottomNotice) {
+                bottomNotice.style.display = 'none';
+            }
+            
+            allRawData = initialPageData.allData;
+            currentFilters.status = '정규'; // Set default status to '정규' for standard Vendor mode!
+            buildAllFilterButtons(initialPageData.filterOptions); // Always keep full initial filter buttons
+            renderTableHeader(initialPageData.headers, PAGE_CONSTANTS);
+            applyAllFilters();
+            document.querySelectorAll('.card-custom .filter-input').forEach(input => input.onkeyup = applyTextFiltersOnKey);
+        } else {
+            if (ourVendorBtn) {
+                ourVendorBtn.classList.remove('btn-primary');
+                ourVendorBtn.classList.add('btn-outline-primary');
+            }
+            if (ipcVendorBtn) {
+                ipcVendorBtn.classList.remove('btn-outline-primary');
+                ipcVendorBtn.classList.add('btn-primary');
+            }
+            if (typeFilter) {
+                typeFilter.style.setProperty('display', 'none', 'important');
+            }
+            if (subcontractFilter) {
+                subcontractFilter.style.setProperty('display', 'none', 'important');
+            }
+            if (listingStatusFilter) {
+                listingStatusFilter.style.setProperty('display', 'none', 'important');
+            }
+            if (revenueFilter) {
+                revenueFilter.style.setProperty('display', 'none', 'important');
+            }
+            if (bottomNotice) {
+                bottomNotice.style.display = 'block';
+            }
+            
+            if (window.ipcVendorsData) {
+                allRawData = window.ipcVendorsData.allData;
+                currentFilters.status = '비정규'; // Set default status to '비정규' for IPC Vendor mode!
+                buildAllFilterButtons(initialPageData.filterOptions); // Always keep full initial filter buttons
+                renderTableHeader(window.ipcVendorsData.headers, PAGE_CONSTANTS);
+                applyAllFilters();
+                document.querySelectorAll('.card-custom .filter-input').forEach(input => input.onkeyup = applyTextFiltersOnKey);
+            } else {
+                const tableBody = document.getElementById('table-body');
+                const tableHead = document.getElementById('table-head');
+                
+                tableBody.innerHTML = '';
+                
+                const tableLoader = document.getElementById('table-loading-indicator');
+                if (tableLoader) tableLoader.style.display = 'block';
+                
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        const tableLoader = document.getElementById('table-loading-indicator');
+                        if (tableLoader) tableLoader.style.display = 'none';
+                        if (res && res.success) {
+                            window.ipcVendorsData = res;
+                            if (currentPartnerType === 'IPC 거래선') {
+                                allRawData = window.ipcVendorsData.allData;
+                                currentFilters.status = '비정규'; // Set default status to '비정규' for IPC Vendor mode!
+                                buildAllFilterButtons(initialPageData.filterOptions); // Always keep full initial filter buttons
+                                renderTableHeader(window.ipcVendorsData.headers, PAGE_CONSTANTS);
+                                applyAllFilters();
+                                document.querySelectorAll('.card-custom .filter-input').forEach(input => input.onkeyup = applyTextFiltersOnKey);
+                            }
+                        } else {
+                            if (currentPartnerType === 'IPC 거래선') {
+                                tableBody.innerHTML = `<tr><td colspan="50" class="text-center py-5 text-danger fw-bold">${res ? res.message : '데이터 로딩 실패'}</td></tr>`;
+                            }
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        const tableLoader = document.getElementById('table-loading-indicator');
+                        if (tableLoader) tableLoader.style.display = 'none';
+                        if (currentPartnerType === 'IPC 거래선') {
+                            tableBody.innerHTML = `<tr><td colspan="50" class="text-center py-5 text-danger fw-bold">데이터 로드 실패: ${err.toString()}</td></tr>`;
+                        }
+                    })
+                    .getData({ partnerType: 'IPC 거래선' });
+            }
+        }
+    }
+
+    function applyZoomScaling() {
+        var baseWidth = 2560;
+        var currentWidth = window.innerWidth;
+        var zoomRatio = currentWidth / baseWidth;
+        document.body.style.zoom = zoomRatio;
+    }
+    
+    window.addEventListener('load', applyZoomScaling);
+    window.addEventListener('resize', applyZoomScaling);
+    applyZoomScaling();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.isAccessLogged) {
+            window.isAccessLogged = true;
+            setTimeout(() => {
+                google.script.run.logAccess("협력업체 관리대장");
+            }, 1000);
+        }
+        
+        const ourVendorBtn = document.getElementById('our-vendor-btn');
+        const ipcVendorBtn = document.getElementById('ipc-vendor-btn');
+        if (ourVendorBtn) {
+            ourVendorBtn.onclick = function() {
+                switchToPartnerType('당사 거래선');
+            };
+        }
+        if (ipcVendorBtn) {
+            ipcVendorBtn.onclick = function() {
+                switchToPartnerType('IPC 거래선');
+            };
+        }
+
+        renderPage(initialPageData);
+    });
+</script>
+</body>
+</html>

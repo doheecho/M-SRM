@@ -1,0 +1,86 @@
+<style>
+    #global-header { flex-shrink: 0; background-color: #1428A0; height: 50px; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white; margin-bottom: 20px; }
+    #global-header .header-title { font-weight: 700; font-size: 1.1rem; }
+    #global-header .module-title { color: #00BFFF; font-weight: 700; }
+    #global-header .header-buttons { display: flex; align-items: center; gap: 15px; }
+    #global-header .header-buttons .btn { font-size: 0.85rem; }
+    #global-header .btn-icon-menu { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; }
+    #global-header .btn-icon-menu svg { width: 22px; height: 22px; }
+    #global-header .btn-icon-menu::after { display: none; }
+    #global-header .dropdown-item {font-size: 0.9rem; font-weight: 700; }
+    #global-header .user-info-text { font-size: 0.9rem; font-weight: 500; color: #E0E0E0; }
+    #global-header .confidential-text { font-size: 0.9rem; font-weight: 700; color: #FF5274; margin-left: 15px; }
+    #global-header .dropdown-divider { margin: 0.3rem 0; }
+</style>
+
+<script>
+    function renderHeaderUI(userEmail, moduleTitle) {
+        let headerElement = document.getElementById('global-header');
+        if (!headerElement) {
+            headerElement = document.createElement('header');
+            headerElement.id = 'global-header';
+            document.body.insertBefore(headerElement, document.body.firstChild);
+        }
+
+        let initialName = 'USER';
+        if (userEmail) initialName = userEmail.split('@')[0].toUpperCase();
+
+        if (!window.initialConnectTime) {
+            const now = new Date();
+            const pad = (num) => String(num).padStart(2, '0');
+            window.initialConnectTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        }
+        
+        const titleSuffix = moduleTitle ? `&nbsp;&nbsp;<span class="module-title">${moduleTitle}</span>` : '';
+        
+        let html = `
+            <div class="header-title">삼성메디슨 구매그룹${titleSuffix}</div>
+            <div class="header-buttons">
+                <span class="user-info-text"><span id="dynamic-user-name">${initialName}</span>&nbsp;&nbsp;&nbsp;&nbsp;접속시간: ${window.initialConnectTime}</span>
+                <div class="dropdown">
+                    <button class="btn btn-outline-light btn-icon-menu" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false" title="전체 메뉴">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton" id="dynamic-menu-list">
+                        <!-- 동적으로 로딩되는 메뉴가 들어갈 자리 -->
+                        <li><a class="dropdown-item text-muted" href="#">메뉴 로딩 중...</a></li>
+                    </ul>
+                </div>
+                <span class="confidential-text">Confidential</span>
+            </div>
+        `;
+        
+        headerElement.innerHTML = html;
+
+        if (google && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(fullName) {
+                const nameSpan = document.getElementById('dynamic-user-name');
+                if (nameSpan && fullName) {
+                    nameSpan.innerHTML = fullName;
+                }
+            }).fetchUserDeptAndName();
+
+            google.script.run.withSuccessHandler(function(menuGroups) {
+                const menuList = document.getElementById('dynamic-menu-list');
+                if (!menuList) return;
+                
+                if (menuGroups && menuGroups.length > 0) {
+                    let menuHtml = '';
+                    menuGroups.forEach((group, index) => {
+                        group.forEach(link => {
+                            menuHtml += `<li><a class="dropdown-item" href="${link.url}" target="_blank">${link.title}</a></li>`;
+                        });
+                        if (index < menuGroups.length - 1) {
+                            menuHtml += `<li><hr class="dropdown-divider"></li>`;
+                        }
+                    });
+                    menuList.innerHTML = menuHtml;
+                } else {
+                    menuList.innerHTML = '<li><a class="dropdown-item text-danger" href="#">메뉴를 불러올 수 없습니다.</a></li>';
+                }
+            }).getMenuLinks();
+        }
+    }
+</script>

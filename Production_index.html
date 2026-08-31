@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    :root { --samsung-blue: #1428A0; --bg-color: #f4f7f9; }
+    body { height: 100vh; margin: 0; background-color: var(--bg-color); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+    .filter-bar { background: #e9ecef; padding: 8px 25px; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; gap: 12px; }
+    .filter-bar .label { font-weight: 700; font-size: 0.85rem; color: #495057; }
+    #year-filters { display: flex; gap: 6px; }
+    #year-filters .btn, .btn-header { font-weight: 800 !important; font-size: 0.75rem !important; padding: 2px 12px !important; border-radius: 4px !important; }
+    .main-content { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; padding: 15px; overflow: hidden; }
+    .column-panel { background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e1e4e8; overflow: hidden; }
+    .panel-header { padding: 8px 20px; border-bottom: 2px solid #f0f0f0; font-weight: 700; color: var(--samsung-blue); display: flex; justify-content: space-between; align-items: center; min-height: 52px; }
+    .panel-body { flex: 1; overflow-y: auto; padding: 15px; }
+    #sel-exec-code { height: 26px; padding: 0 5px; font-size: 0.75rem !important; width: 70px; display: none; font-weight: 800 !important; color: var(--samsung-blue) !important; border: 1px solid #adb5bd; border-radius: 4px; }
+    .table-pivot { font-size: 0.75rem; width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 5px; }
+    .table-pivot th { background: #f8f9fa; position: sticky; top: 0; border: 1px solid #dee2e6; padding: 4px; text-align: center; z-index: 2; white-space: nowrap; }
+    .table-pivot td { border: 1px solid #dee2e6; padding: 4px; text-align: right; }
+    .row-label { text-align: left !important; font-weight: 600; background: #fff; }
+    .grade-row td { background: #e7f0ff !important; font-weight: 700; color: #1428A0; }
+    .total-row td { background: #fff9db !important; font-weight: 700; border-top: 2px solid #adb5bd; }
+    .chart-container-mini { height: 160px; padding: 5px 0; border-bottom: 2px dashed #eee; margin-bottom: 10px; }
+    .section-label { background: none; color: #000000; padding: 6px; font-size: 0.95rem; margin: 0; }
+    .loading-overlay { position: fixed; top: 50px; left: 0; width: 100%; height: calc(100% - 50px); background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; }
+    .toggle-content { display: none; }
+    .form-select-sm { font-weight: 700 !important; }
+    #sel-actual-USS, #sel-plan-USS { color: #1428A0 !important; }
+    #sel-actual-USP, #sel-plan-USP { color: #dc3545 !important; }
+    #sel-actual-USO, #sel-plan-USO { color: #28a745 !important; }
+    select[id^="sel-comp-"] { color: #ff8c00 !important; }
+  </style>
+</head>
+<body>
+  <?!= include('header'); ?>
+
+  <div class="filter-bar">
+    <span class="label">조회 연도 :</span>
+    <div id="year-filters"></div>
+    
+    <div class="ms-3 d-flex align-items-center gap-1">
+      <span class="label ms-2">모델 기준 :</span>
+      <div class="btn-group btn-group-sm">
+        <button id="btn-model-derived" class="btn btn-primary active btn-header" onclick="setModelType('derived')">파생모델</button>
+        <button id="btn-model-basic" class="btn btn-outline-primary btn-header" onclick="setModelType('basic')">Basic모델</button>
+      </div>
+    </div>
+    
+    <div class="ms-3 d-flex gap-2">
+      <button id="btn-all-pivot" class="btn btn-outline-secondary btn-header" onclick="toggleAll('pivot')">전체 표 보이기</button>
+      <button id="btn-all-chart" class="btn btn-outline-secondary btn-header" onclick="toggleAll('chart-wrap')">전체 그래프 보이기</button>
+    </div>
+    
+    <div class="ms-3 d-flex align-items-center gap-2">
+      <span class="label">다운로드(Raw) : </span>
+      <button class="btn btn-success btn-header" onclick="downloadRawData('실적Raw', '생산실적')">생산실적</button>
+      <button class="btn btn-success btn-header" onclick="downloadRawData('경영계획Raw', '경영계획')">경영계획</button>
+      <button class="btn btn-success btn-header" onclick="downloadRawData('실행계획Raw', '실행계획')">실행계획</button>
+    </div>
+    
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <button class="btn btn-warning btn-header fw-bold text-dark" style="border-width:2px;" onclick="refreshDataFromServer()">데이터 갱신</button>
+      <button class="btn btn-outline-danger btn-header fw-bold" style="border-width:2px;" onclick="resetAllFilters()">필터 초기화</button>
+    </div>
+  </div>
+  
+  <div id="loading" class="loading-overlay">
+    <div class="spinner-border text-primary"></div>
+    <span class="ms-2 fw-bold mt-2" id="loading-text">실적 데이터를 불러오는 중입니다...</span>
+  </div>
+  
+  <main class="main-content">
+    <!-- 1열: 생산실적 패널 -->
+    <div class="column-panel">
+      <div class="panel-header"><span>생산실적</span></div>
+      <div class="panel-body">
+        <!-- 시스템 -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">시스템</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-actual-USS" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-actual-USS', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-actual-USS" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-actual-USS', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-actual-USS" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-actual-USS" class="toggle-content">
+            <div class="chart-container-mini">
+              <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex gap-1">
+                  <select id="sel-actual-USS" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('actual-USS')"></select>
+                  <select id="sel-comp-actual-USS" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('actual-USS')"></select>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button id="mode-actual-USS-M" class="btn btn-outline-primary btn-header" onclick="setChartMode('actual-USS','M')">월별</button>
+                  <button id="mode-actual-USS-Y" class="btn btn-outline-primary active btn-header" onclick="setChartMode('actual-USS','Y')">년도별</button>
+                </div>
+              </div>
+              <div style="height: 120px;"><canvas id="chart-actual-USS"></canvas></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 프로브 -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">프로브</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-actual-USP" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-actual-USP', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-actual-USP" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-actual-USP', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-actual-USP" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-actual-USP" class="toggle-content">
+            <div class="chart-container-mini">
+              <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex gap-1">
+                  <select id="sel-actual-USP" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('actual-USP')"></select>
+                  <select id="sel-comp-actual-USP" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('actual-USP')"></select>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button id="mode-actual-USP-M" class="btn btn-outline-primary btn-header" onclick="setChartMode('actual-USP','M')">월별</button>
+                  <button id="mode-actual-USP-Y" class="btn btn-outline-primary active btn-header" onclick="setChartMode('actual-USP','Y')">년도별</button>
+                </div>
+              </div>
+              <div style="height: 120px;"><canvas id="chart-actual-USP"></canvas></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 옵션 -->
+        <div class="mb-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">옵션</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-actual-USO" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-actual-USO', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-actual-USO" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-actual-USO', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-actual-USO" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-actual-USO" class="toggle-content">
+            <div class="chart-container-mini" style="border-bottom:none;">
+              <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex gap-1">
+                  <select id="sel-actual-USO" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('actual-USO')"></select>
+                  <select id="sel-comp-actual-USO" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('actual-USO')"></select>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button id="mode-actual-USO-M" class="btn btn-outline-primary btn-header" onclick="setChartMode('actual-USO','M')">월별</button>
+                  <button id="mode-actual-USO-Y" class="btn btn-outline-primary active btn-header" onclick="setChartMode('actual-USO','Y')">년도별</button>
+                </div>
+              </div>
+              <div style="height: 120px;"><canvas id="chart-actual-USO"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 2열: 계획 패널 -->
+    <div class="column-panel">
+      <div class="panel-header">
+        <div class="d-flex align-items-center gap-2">
+          <span id="plan-panel-title">경영계획</span>
+          <select id="sel-exec-code" class="form-select" onchange="refreshUI()"></select>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <button id="btn-mode-mgmt" class="btn btn-primary active btn-header" onclick="setPlanMode('경영')">경영계획</button>
+          <button id="btn-mode-exec" class="btn btn-outline-primary btn-header" onclick="setPlanMode('실행')">실행계획</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <!-- 시스템 -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">시스템</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-plan-USS" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-plan-USS', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-plan-USS" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-plan-USS', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-plan-USS" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-plan-USS" class="toggle-content">
+            <div class="chart-container-mini">
+              <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex gap-1">
+                  <select id="sel-plan-USS" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('plan-USS')"></select>
+                  <select id="sel-comp-plan-USS" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('plan-USS')"></select>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button id="mode-plan-USS-M" class="btn btn-outline-info btn-header" onclick="setChartMode('plan-USS','M')">월별</button>
+                  <button id="mode-plan-USS-Y" class="btn btn-outline-info active btn-header" onclick="setChartMode('plan-USS','Y')">년도별</button>
+                </div>
+              </div>
+              <div style="height: 120px;"><canvas id="chart-plan-USS"></canvas></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 프로브 -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">프로브</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-plan-USP" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-plan-USP', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-plan-USP" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-plan-USP', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-plan-USP" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-plan-USP" class="toggle-content">
+            <div class="chart-container-mini">
+              <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex gap-1">
+                  <select id="sel-plan-USP" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('plan-USP')"></select>
+                  <select id="sel-comp-plan-USP" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('plan-USP')"></select>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button id="mode-plan-USP-M" class="btn btn-outline-info btn-header" onclick="setChartMode('plan-USP','M')">월별</button>
+                  <button id="mode-plan-USP-Y" class="btn btn-outline-info active btn-header" onclick="setChartMode('plan-USP','Y')">년도별</button>
+                </div>
+              </div>
+              <div style="height: 120px;"><canvas id="chart-plan-USP"></canvas></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 옵션 -->
+        <div class="mb-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">옵션</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-plan-USO" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-plan-USO', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-plan-USO" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-plan-USO', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-plan-USO" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-plan-USO" class="toggle-content">
+            <div class="chart-container-mini" style="border-bottom:none;">
+              <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex gap-1">
+                  <select id="sel-plan-USO" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('plan-USO')"></select>
+                  <select id="sel-comp-plan-USO" class="form-select form-select-sm" style="width: 120px;" onchange="updateChart('plan-USO')"></select>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button id="mode-plan-USO-M" class="btn btn-outline-info btn-header" onclick="setChartMode('plan-USO','M')">월별</button>
+                  <button id="mode-plan-USO-Y" class="btn btn-outline-info active btn-header" onclick="setChartMode('plan-USO','Y')">년도별</button>
+                </div>
+              </div>
+              <div style="height: 120px;"><canvas id="chart-plan-USO"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 3열: 중장기 공급계획 패널 -->
+    <div class="column-panel">
+      <div class="panel-header">
+        <span>중장기 공급계획</span>
+        <div class="btn-group btn-group-sm">
+          <button id="btn-lt-all" class="btn btn-primary active btn-header" onclick="setLtYear('all')">전체</button>
+          <button id="btn-lt-2026" class="btn btn-outline-primary btn-header" onclick="setLtYear('2026')">2026년</button>
+          <button id="btn-lt-2027" class="btn btn-outline-primary btn-header" onclick="setLtYear('2027')">2027년</button>
+          <button id="btn-lt-2028" class="btn btn-outline-primary btn-header" onclick="setLtYear('2028')">2028년</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <!-- 시스템 -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">시스템</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-longterm-USS" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-longterm-USS', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-longterm-USS" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-longterm-USS', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-longterm-USS" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-longterm-USS" class="toggle-content">
+            <div class="chart-container-mini" style="border-bottom:none; height:160px; display:flex; align-items:center; justify-content:center; color:#adb5bd; font-weight:700;">
+              그래프 준비 중...
+            </div>
+          </div>
+        </div>
+        
+        <!-- 프로브 -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="section-label fw-bold">프로브</div>
+            <div class="d-flex gap-1">
+              <div class="btn-group btn-group-sm">
+                <button id="btn-toggle-pivot-longterm-USP" class="btn btn-outline-secondary btn-header" onclick="toggleElement('pivot-longterm-USP', this, '표')">표 보이기</button>
+                <button id="btn-toggle-chart-wrap-longterm-USP" class="btn btn-outline-secondary btn-header" onclick="toggleElement('chart-wrap-longterm-USP', this, '그래프')">그래프 보이기</button>
+              </div>
+            </div>
+          </div>
+          <div id="pivot-longterm-USP" class="table-responsive toggle-content"></div>
+          <div id="chart-wrap-longterm-USP" class="toggle-content">
+            <div class="chart-container-mini" style="border-bottom:none; height:160px; display:flex; align-items:center; justify-content:center; color:#adb5bd; font-weight:700;">
+              그래프 준비 중...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script>
+    let actualData = []; 
+    let planData = []; 
+    let execPlanData = []; 
+    let longTermData = []; 
+    let selectedYear = ''; 
+    let activePlanMode = '경영'; 
+    let availableYears = [];
+    let activeLtYear = 'all'; 
+    let activeModelType = 'derived'; 
+    
+    const configs = {
+      'actual-USS': { chart: null, mode: 'Y' },
+      'actual-USP': { chart: null, mode: 'Y' },
+      'actual-USO': { chart: null, mode: 'Y' },
+      'plan-USS':   { chart: null, mode: 'Y' },
+      'plan-USP':   { chart: null, mode: 'Y' },
+      'plan-USO':   { chart: null, mode: 'Y' }
+    };
+    
+    const chartColors = { USS: '#1428A0', USP: '#dc3545', USO: '#28a745' };
+    
+    function loadData(forceRefresh) {
+      document.getElementById('loading').style.display = 'flex';
+      document.getElementById('loading-text').innerText = forceRefresh ? '스프레드시트에서 최신 데이터를 갱신 중입니다 (시간 소요)...' : '실적 데이터를 불러오는 중입니다...';
+      
+      google.script.run.withSuccessHandler(res => {
+        document.getElementById('loading').style.display = 'none';
+        if (res && res.success) {
+          actualData = res.actualData || [];
+          planData = res.planData || [];
+          execPlanData = res.execPlanData || [];
+          longTermData = res.longTermData || [];
+          availableYears = res.filters ? res.filters.years : [];
+          
+          if (availableYears.length > 0) {
+            selectedYear = Math.max(...availableYears).toString();
+          }
+          
+          const execCodes = [...new Set(execPlanData.map(d => d.execCode).filter(c => c))].sort();
+          const selExec = document.getElementById('sel-exec-code');
+          if (selExec) {
+            selExec.innerHTML = execCodes.map(c => `<option value="${c}">${c}</option>`).join('');
+          }
+          
+          initYearFilters(availableYears);
+          
+          if(typeof renderHeaderUI === 'function') {
+            renderHeaderUI(res.userDisplayName || res.userEmail, "생산실적 및 계획");
+          }
+          
+          // 접속로그 기록하기 (비동기)
+          if (!window.isAccessLogged) {
+            window.isAccessLogged = true;
+            setTimeout(() => {
+              google.script.run.logAccess("생산실적 및 계획");
+            }, 1000);
+          }
+          
+          refreshUI();
+          renderLongTermPivot(); 
+        } else {
+          alert('데이터 로드 실패: ' + (res ? res.message : '서버 응답 없음'));
+        }
+      }).withFailureHandler(err => {
+        document.getElementById('loading').style.display = 'none';
+        alert('서버 함수 실행 중 에러가 발생했습니다: ' + err.message);
+      }).getDashboardData(forceRefresh);
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      Chart.register(ChartDataLabels);
+      loadData(false);
+    });
+    
+    function refreshDataFromServer() {
+      if(confirm('최신 데이터를 스프레드시트에서 다시 불러오시겠습니까?')) {
+        loadData(true);
+      }
+    }
+
+    function setModelType(type) {
+      activeModelType = type;
+      document.getElementById('btn-model-derived').className = `btn btn-header ${type === 'derived' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      document.getElementById('btn-model-basic').className = `btn btn-header ${type === 'basic' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      
+      Object.keys(configs).forEach(id => {
+        const s1 = document.getElementById('sel-'+id); 
+        const s2 = document.getElementById('sel-comp-'+id);
+        if(s1) s1.value = 'ALL'; 
+        if(s2) s2.value = '';
+      });
+      refreshUI();
+      renderLongTermPivot();
+    }
+    
+    function getModelKey(d) {
+      return activeModelType === 'basic' ? d.basicModelName : d.modelName;
+    }
+    
+    function setPlanMode(mode) {
+      activePlanMode = mode;
+      document.getElementById('btn-mode-mgmt').className = `btn btn-header ${mode === '경영' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      document.getElementById('btn-mode-exec').className = `btn btn-header ${mode === '실행' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      document.getElementById('plan-panel-title').innerText = mode === '경영' ? '경영계획' : '실행계획';
+      document.getElementById('sel-exec-code').style.display = mode === '실행' ? 'inline-block' : 'none';
+      refreshUI();
+    }
+    
+    function toggleAll(prefix) {
+      const allEls = document.querySelectorAll(`div[id^="${prefix}-"]`);
+      const anyHidden = Array.from(allEls).some(el => el.style.display === 'none' || getComputedStyle(el).display === 'none');
+      
+      allEls.forEach(el => {
+        const id = el.id; 
+        const type = id.includes('pivot') ? '표' : '그래프';
+        const btnId = `btn-toggle-${id}`;
+        const btn = document.getElementById(btnId);
+        el.style.display = anyHidden ? 'block' : 'none';
+        if(btn) {
+          btn.innerText = anyHidden ? `${type} 숨기기` : `${type} 보이기`;
+          btn.className = anyHidden ? 'btn btn-secondary active btn-header' : 'btn btn-outline-secondary btn-header';
+        }
+      });
+      document.getElementById(`btn-all-${prefix.includes('pivot') ? 'pivot' : 'chart'}`).innerText = anyHidden ? `전체 ${prefix.includes('pivot') ? '표' : '그래프'} 숨기기` : `전체 ${prefix.includes('pivot') ? '표' : '그래프'} 보이기`;
+    }
+    
+    function resetAllFilters() {
+      selectedYear = Math.max(...availableYears).toString();
+      initYearFilters(availableYears);
+      setPlanMode('경영');
+      setModelType('derived');
+
+      Object.keys(configs).forEach(id => {
+        configs[id].mode = 'Y';
+        const s1 = document.getElementById('sel-'+id); 
+        const s2 = document.getElementById('sel-comp-'+id);
+        if(s1) s1.value = 'ALL'; 
+        if(s2) s2.value = '';
+        
+        const mM = document.getElementById(`mode-${id}-M`); 
+        const mY = document.getElementById(`mode-${id}-Y`);
+        if(mM) mM.classList.remove('active'); 
+        if(mY) mY.classList.add('active');
+      });
+      
+      activeLtYear = 'all'; 
+      setLtYear('all'); 
+      refreshUI();
+    }
+    
+    function downloadRawData(sheetName, fileName) {
+      google.script.run.withSuccessHandler(function(url) {
+        if (url) {
+          const link = document.createElement('a');
+          link.href = url; 
+          link.target = '_blank'; 
+          link.download = fileName + '.xlsx';
+          document.body.appendChild(link); 
+          link.click(); 
+          document.body.removeChild(link);
+        } else {
+          alert("시트를 찾을 수 없습니다: " + sheetName);
+        }
+      }).getDownloadUrl(sheetName);
+    }
+    
+    function initYearFilters(years) {
+      const div = document.getElementById('year-filters'); 
+      div.innerHTML = ''; 
+      years.forEach(y => {
+        const btn = document.createElement('button'); 
+        const yStr = y.toString();
+        btn.className = `btn ${selectedYear === yStr ? 'btn-primary active' : 'btn-outline-primary'}`;
+        btn.innerText = yStr; 
+        btn.onclick = (e) => changeYear(yStr, e.target); 
+        div.appendChild(btn);
+      });
+    }
+    
+    function changeYear(year, btn) {
+      selectedYear = year;
+      document.querySelectorAll('#year-filters .btn').forEach(b => { 
+        b.classList.remove('active', 'btn-primary'); 
+        b.classList.add('btn-outline-primary'); 
+      });
+      btn.classList.add('active', 'btn-primary'); 
+      refreshUI();
+    }
+    
+    function toggleElement(id, btn, label) {
+      const el = document.getElementById(id); 
+      const isHidden = (el.style.display === 'none' || getComputedStyle(el).display === 'none');
+      el.style.display = isHidden ? 'block' : 'none';
+      btn.innerText = isHidden ? `${label} 숨기기` : `${label} 보이기`;
+      btn.className = isHidden ? 'btn btn-secondary active btn-header' : 'btn btn-outline-secondary btn-header';
+    }
+    
+    function refreshUI() {
+      const types = ['USS', 'USP', 'USO'];
+      const fActual = actualData.filter(d => d.year == selectedYear);
+      let basePlanData = activePlanMode === '경영' ? planData : execPlanData;
+      
+      if (activePlanMode === '실행') {
+        const selectedExecCode = document.getElementById('sel-exec-code').value;
+        if (selectedExecCode) {
+          basePlanData = basePlanData.filter(d => d.execCode === selectedExecCode);
+        }
+      }
+      
+      const fPlan = basePlanData.filter(d => d.year == selectedYear);
+      
+      types.forEach(type => {
+        const aData = fActual.filter(d => d.type === type);
+        renderPivotTable('actual-' + type, aData);
+        updateChartSelectors('actual-' + type, actualData.filter(d => d.type === type)); 
+        updateChart('actual-' + type);
+        
+        const pData = fPlan.filter(d => d.type === type);
+        renderPivotTable('plan-' + type, pData);
+        updateChartSelectors('plan-' + type, basePlanData.filter(d => d.type === type));
+        updateChart('plan-' + type);
+      });
+    }
+    
+    function renderPivotTable(id, data) {
+      const parts = id.split('-');
+      const type = parts[1]; 
+      const pivot = {}; 
+      const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; 
+      
+      if (type === 'USO') {
+        data.forEach(d => {
+          const itemKey = getModelKey(d);
+          if (!pivot[itemKey]) {
+            pivot[itemKey] = { total: 0, ms: {} };
+          }
+          pivot[itemKey].ms[d.month] = (pivot[itemKey].ms[d.month] || 0) + d.qty; 
+          pivot[itemKey].total += d.qty;
+        });
+        
+        let h = `<table class="table-pivot"><thead><tr><th>모델명</th>`;
+        months.forEach(m => { h += `<th>${m}월</th>`; });
+        h += '<th>합계</th></tr></thead><tbody>';
+        
+        let gt = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, total: 0 };
+        const keys = Object.keys(pivot).sort();
+        
+        if (keys.length === 0) {
+          h += '<tr><td colspan="14" class="text-center py-3">데이터 없음</td></tr>';
+        } else {
+          keys.forEach(ik => {
+            h += `<tr><td class="row-label text-center">${ik}</td>`;
+            months.forEach(m => {
+              const v = pivot[ik].ms[m] || 0; 
+              gt[m] += v; 
+              h += `<td>${v.toLocaleString()}</td>`;
+            });
+            h += `<td>${pivot[ik].total.toLocaleString()}</td></tr>`;
+            gt.total += pivot[ik].total;
+          });
+          
+          h += `</tbody><tfoot><tr class="total-row"><td class="text-center">총 합계</td>`;
+          months.forEach(m => { h += `<td>${gt[m].toLocaleString()}</td>`; });
+          h += `<td>${gt.total.toLocaleString()}</td></tr></tfoot>`;
+        }
+        document.getElementById('pivot-' + id).innerHTML = h + '</table>';
+        return;
+      }
+      
+      data.forEach(d => {
+        const itemKey = getModelKey(d);
+        if (!pivot[d.grade]) {
+          pivot[d.grade] = { total: 0, ms: {}, items: {} };
+        }
+        if (!pivot[d.grade].items[itemKey]) {
+          pivot[d.grade].items[itemKey] = { total: 0, ms: {} };
+        }
+        pivot[d.grade].ms[d.month] = (pivot[d.grade].ms[d.month] || 0) + d.qty; 
+        pivot[d.grade].items[itemKey].ms[d.month] = (pivot[d.grade].items[itemKey].ms[d.month] || 0) + d.qty;
+        pivot[d.grade].total += d.qty; 
+        pivot[d.grade].items[itemKey].total += d.qty;
+      });
+      
+      let grades = Object.keys(pivot);
+      if (type === 'USS') { 
+        const cs = ['Premium', 'High', 'Mid', 'Low', 'HCU']; 
+        grades.sort((a,b) => (cs.indexOf(a)===-1 ? 99 : cs.indexOf(a)) - (cs.indexOf(b)===-1 ? 99 : cs.indexOf(b))); 
+      } else {
+        grades.sort();
+      }
+      
+      let h = `<table class="table-pivot"><thead><tr><th>모델명</th>`;
+      months.forEach(m => { h += `<th>${m}월</th>`; });
+      h += '<th>합계</th></tr></thead><tbody>';
+      
+      let gt = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, total: 0 };
+      
+      if (grades.length === 0) {
+        h += '<tr><td colspan="14" class="text-center py-3">데이터 없음</td></tr>';
+      } else {
+        grades.forEach(g => {
+          h += `<tr class="grade-row"><td class="row-label">${g}</td>`;
+          months.forEach(m => { 
+            const v = pivot[g].ms[m] || 0; 
+            gt[m] += v; 
+            h += `<td>${v.toLocaleString()}</td>`; 
+          });
+          h += `<td>${pivot[g].total.toLocaleString()}</td></tr>`;
+          gt.total += pivot[g].total;
+          
+          Object.keys(pivot[g].items).sort().forEach(ik => {
+            h += `<tr><td class="row-label ps-3">${ik}</td>`;
+            months.forEach(m => {
+              h += `<td>${(pivot[g].items[ik].ms[m] || 0).toLocaleString()}</td>`;
+            });
+            h += `<td>${pivot[g].items[ik].total.toLocaleString()}</td></tr>`;
+          });
+        });
+        h += `</tbody><tfoot><tr class="total-row"><td class="text-center">총 합계</td>`;
+        months.forEach(m => { h += `<td>${gt[m].toLocaleString()}</td>`; });
+        h += `<td>${gt.total.toLocaleString()}</td></tr></tfoot>`;
+      }
+      document.getElementById('pivot-' + id).innerHTML = h + '</table>';
+    }
+    
+    function updateChartSelectors(id, typeDataAllYears) {
+      const items = [...new Set(typeDataAllYears.map(d => getModelKey(d)))].sort();
+      const parts = id.split('-');
+      const type = parts[1]; 
+      
+      const sel1 = document.getElementById('sel-' + id); 
+      const last1 = sel1.value;
+      let opt1 = `<option value="ALL">전체 (${type})</option>`;
+      items.forEach(m => { opt1 += `<option value="${m}">${m}</option>`; });
+      sel1.innerHTML = opt1;
+      sel1.value = (last1 && (last1 === 'ALL' || items.includes(last1))) ? last1 : "ALL";
+      
+      const sel2 = document.getElementById('sel-comp-' + id); 
+      const last2 = sel2.value;
+      let opt2 = `<option value="">(비교 안함)</option>`;
+      items.forEach(m => { opt2 += `<option value="${m}">${m}</option>`; });
+      sel2.innerHTML = opt2;
+      sel2.value = (last2 && items.includes(last2)) ? last2 : "";
+    }
+    
+    function setChartMode(id, m) { 
+      configs[id].mode = m; 
+      document.getElementById(`mode-${id}-M`).classList.toggle('active', m==='M'); 
+      document.getElementById(`mode-${id}-Y`).classList.toggle('active', m==='Y'); 
+      updateChart(id); 
+    }
+    
+    function updateChart(id) {
+      const parts = id.split('-');
+      const type = parts[1]; 
+      const isPlan = id.startsWith('plan-');
+      let sourceData = actualData; 
+      
+      if (isPlan) { 
+        sourceData = activePlanMode === '경영' ? planData : execPlanData; 
+        if (activePlanMode === '실행') { 
+          const code = document.getElementById('sel-exec-code').value; 
+          if (code) sourceData = sourceData.filter(d => d.execCode === code); 
+        } 
+      }
+      
+      const conf = configs[id]; 
+      const selVal1 = document.getElementById('sel-' + id).value; 
+      const selVal2 = document.getElementById('sel-comp-' + id).value;
+      if (!selVal1) { if (conf.chart) conf.chart.destroy(); return; }
+      
+      const dataPool1 = (selVal1 === 'ALL') ? sourceData.filter(d => d.type === type) : sourceData.filter(d => getModelKey(d) === selVal1 && d.type === type);
+      
+      let labels = []; 
+      let points1 = [];
+      
+      if (conf.mode === 'M') { 
+        for(let m = 1; m <= 12; m++) { 
+          labels.push(m + '월'); 
+          points1.push(dataPool1.filter(d => d.year == selectedYear && d.month == m).reduce((a,b) => a+b.qty, 0)); 
+        }
+      } else { 
+        const years = [...new Set(sourceData.map(d => d.year))].sort(); 
+        years.forEach(y => { 
+          labels.push(y + '년'); 
+          points1.push(dataPool1.filter(d => d.year == y).reduce((a,b) => a+b.qty, 0)); 
+        } ); 
+      }
+      
+      const hasComp = (selVal2 && selVal2 !== "");
+      let datasets = [{ 
+        label: selVal1==='ALL' ? `${type} 합계` : selVal1, 
+        data: points1, 
+        borderColor: chartColors[type], 
+        backgroundColor: chartColors[type] + '1A', 
+        fill: true, 
+        tension: 0.2, 
+        pointRadius: 4.5, 
+        pointBackgroundColor: chartColors[type], 
+        pointBorderColor: '#ffffff', 
+        pointBorderWidth: 1.5, 
+        datalabels: { align: hasComp?'bottom':'top', anchor: 'end', color: chartColors[type], offset: 4 } 
+      }];
+      
+      if (hasComp) {
+        const dataPool2 = sourceData.filter(d => getModelKey(d) === selVal2 && d.type === type);
+        let points2 = [];
+        if (conf.mode === 'M') { 
+          for(let m = 1; m <= 12; m++) { 
+            points2.push(dataPool2.filter(d => d.year == selectedYear && d.month == m).reduce((a,b) => a+b.qty, 0)); 
+          }
+        } else { 
+          const years = [...new Set(sourceData.map(d => d.year))].sort(); 
+          years.forEach(y => { 
+            points2.push(dataPool2.filter(d => d.year == y).reduce((a,b) => a+b.qty, 0)); 
+          } ); 
+        }
+        datasets.push({ 
+          label: selVal2, 
+          data: points2, 
+          borderColor: '#ff8c00', 
+          backgroundColor: 'transparent', 
+          borderDash: [5, 5], 
+          fill: false, 
+          tension: 0.2, 
+          pointRadius: 4.5, 
+          pointBackgroundColor: '#ff8c00', 
+          pointBorderColor: '#ffffff', 
+          pointBorderWidth: 1.5, 
+          datalabels: { align: 'top', anchor: 'end', color: '#d35400', offset: 4 } 
+        });
+      }
+      
+      if (conf.chart) conf.chart.destroy();
+      conf.chart = new Chart(document.getElementById('chart-' + id), { 
+        type: 'line', 
+        data: { labels: labels, datasets: datasets }, 
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          plugins: { 
+            legend: { display: false }, 
+            datalabels: { display: true, font: { weight: 'bold', size: 12 }, formatter: v => v>0 ? v.toLocaleString() : '' } 
+          }, 
+          layout: { padding: { top: 30, left: 10, right: 10 } }, 
+          scales: { y: { display: false }, x: { ticks: { font: { size: 12, weight: '500' } } } } 
+        } 
+      });
+    }
+
+    function setLtYear(y) {
+      activeLtYear = y;
+      document.getElementById('btn-lt-all').className = `btn btn-header ${y === 'all' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      document.getElementById('btn-lt-2026').className = `btn btn-header ${y === '2026' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      document.getElementById('btn-lt-2027').className = `btn btn-header ${y === '2027' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      document.getElementById('btn-lt-2028').className = `btn btn-header ${y === '2028' ? 'btn-primary active' : 'btn-outline-primary'}`;
+      renderLongTermPivot();
+    }
+    
+    function renderLongTermPivot() {
+      renderLongTermPivotForCategory('시스템', 'pivot-longterm-USS');
+      renderLongTermPivotForCategory('프로브', 'pivot-longterm-USP');
+    }
+    
+    function renderLongTermPivotForCategory(cat, elementId) {
+      try {
+        const pivot = {};
+        const filtered = (longTermData || []).filter(d => d.category === cat);
+        const cols = [];
+        const mStr = m => m.toString().padStart(2, '0');
+        
+        if (activeLtYear === '2026') {
+          for(let m=1; m<=12; m++) cols.push({ key: `26-${m}`, label: `26${mStr(m)}`, match: d => d.year === 2026 && d.month === m });
+        } else if (activeLtYear === '2027') {
+          for(let m=1; m<=12; m++) cols.push({ key: `27-${m}`, label: `27${mStr(m)}`, match: d => d.year === 2027 && d.month === m });
+        } else if (activeLtYear === '2028') {
+          for(let m=1; m<=12; m++) cols.push({ key: `28-${m}`, label: `28${mStr(m)}`, match: d => d.year === 2028 && d.month === m });
+        } else { 
+          for(let m=1; m<=12; m++) cols.push({ key: `26-${m}`, label: `26${mStr(m)}`, match: d => d.year === 2026 && d.month === m });
+          for(let m=1; m<=12; m++) cols.push({ key: `27-${m}`, label: `27${mStr(m)}`, match: d => d.year === 2027 && d.month === m });
+          for(let m=1; m<=12; m++) cols.push({ key: `28-${m}`, label: `28${mStr(m)}`, match: d => d.year === 2028 && d.month === m });
+        }
+        
+        filtered.forEach(d => {
+          if (activeLtYear !== 'all' && d.year !== Number(activeLtYear)) return;
+          const g = d.grade || "미분류";
+          const m = getModelKey(d) || "미분류";
+          if (!pivot[g]) {
+            pivot[g] = { total: 0, cols: {}, items: {} };
+          }
+          if (!pivot[g].items[m]) {
+            pivot[g].items[m] = { total: 0, cols: {} };
+          }
+          pivot[g].total += d.qty;
+          pivot[g].items[m].total += d.qty;
+          cols.forEach(c => {
+            if (c.match(d)) {
+              pivot[g].cols[c.key] = (pivot[g].cols[c.key] || 0) + d.qty;
+              pivot[g].items[m].cols[c.key] = (pivot[g].items[m].cols[c.key] || 0) + d.qty;
+            }
+          });
+        });
+        
+        let h = `<table class="table-pivot"><thead><tr><th>모델명</th>`;
+        cols.forEach(c => { h += `<th>${c.label}</th>`; });
+        h += `<th>합계</th></tr></thead><tbody>`;
+        
+        let gt = { total: 0, cols: {} };
+        cols.forEach(c => { gt.cols[c.key] = 0; });
+        const cs = ['Premium', 'High', 'Mid', 'Low', 'HCU'];
+        let grades = Object.keys(pivot).sort((a, b) => (cs.indexOf(a) === -1 ? 99 : cs.indexOf(a)) - (cs.indexOf(b) === -1 ? 99 : cs.indexOf(b)));
+        if (grades.length === 0) {
+          h += `<tr><td colspan="${cols.length + 2}" class="text-center py-3">데이터 없음</td></tr>`;
+        } else {
+          grades.forEach(g => {
+            h += `<tr class="grade-row"><td class="row-label">${g}</td>`;
+            cols.forEach(c => {
+              const v = pivot[g].cols[c.key] || 0;
+              gt.cols[c.key] += v;
+              h += `<td>${v.toLocaleString()}</td>`;
+            });
+            h += `<td>${pivot[g].total.toLocaleString()}</td></tr>`;
+            gt.total += pivot[g].total;
+            Object.keys(pivot[g].items).sort().forEach(ik => {
+              h += `<tr><td class="row-label ps-3">${ik}</td>`;
+              cols.forEach(c => {
+                h += `<td>${(pivot[g].items[ik].cols[c.key] || 0).toLocaleString()}</td>`;
+              });
+              h += `<td>${pivot[g].items[ik].total.toLocaleString()}</td></tr>`;
+            });
+          });
+          h += `</tbody><tfoot><tr class="total-row"><td class="text-center">총 합계</td>`;
+          cols.forEach(c => {
+            h += `<td>${gt.cols[c.key].toLocaleString()}</td>`;
+          });
+          h += `<td>${gt.total.toLocaleString()}</td></tr></tfoot>`;
+        }
+        h += '</table>';
+        document.getElementById(elementId).innerHTML = h;
+      } catch (err) {
+        console.error(err);
+        document.getElementById(elementId).innerHTML = `<div class="text-center text-danger py-3">테이블 생성 중 오류가 발생했습니다.</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
