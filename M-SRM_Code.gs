@@ -1,997 +1,537 @@
-{
-  "update_date": "2026-08-28",
-  "macro": {
-    "dxy": 99.2,
-    "us10y": 4.67,
-    "usdcny": 6.7204,
-    "usdkrw": 1371.9
-  },
-  "history_3y": {
-    "wti": [
-      {
-        "date": "2023-09",
-        "price": 90.79
-      },
-      {
-        "date": "2023-11",
-        "price": 75.96
-      },
-      {
-        "date": "2023-12",
-        "price": 71.65
-      },
-      {
-        "date": "2024-01",
-        "price": 75.85
-      },
-      {
-        "date": "2024-02",
-        "price": 78.26
-      },
-      {
-        "date": "2024-03",
-        "price": 83.17
-      },
-      {
-        "date": "2024-04",
-        "price": 81.93
-      },
-      {
-        "date": "2024-05",
-        "price": 76.99
-      },
-      {
-        "date": "2024-06",
-        "price": 81.54
-      },
-      {
-        "date": "2024-07",
-        "price": 77.91
-      },
-      {
-        "date": "2024-08",
-        "price": 73.55
-      },
-      {
-        "date": "2024-10",
-        "price": 69.26
-      },
-      {
-        "date": "2024-11",
-        "price": 68.0
-      },
-      {
-        "date": "2025-01",
-        "price": 72.53
-      },
-      {
-        "date": "2025-02",
-        "price": 69.76
-      },
-      {
-        "date": "2025-03",
-        "price": 71.48
-      },
-      {
-        "date": "2025-04",
-        "price": 58.21
-      },
-      {
-        "date": "2025-05",
-        "price": 60.79
-      },
-      {
-        "date": "2025-07",
-        "price": 69.26
-      },
-      {
-        "date": "2025-08",
-        "price": 64.01
-      },
-      {
-        "date": "2025-09",
-        "price": 62.37
-      },
-      {
-        "date": "2025-10",
-        "price": 60.98
-      },
-      {
-        "date": "2025-11",
-        "price": 58.55
-      },
-      {
-        "date": "2025-12",
-        "price": 57.42
-      },
-      {
-        "date": "2026-01",
-        "price": 65.21
-      },
-      {
-        "date": "2026-04",
-        "price": 105.07
-      },
-      {
-        "date": "2026-05",
-        "price": 87.36
-      },
-      {
-        "date": "2026-06",
-        "price": 69.5
-      },
-      {
-        "date": "2026-07",
-        "price": 84.67
-      },
-      {
-        "date": "2026-08",
-        "price": 82.99
-      }
-    ],
-    "copper": [
-      {
-        "date": "2023-09",
-        "price": 8214.4
-      },
-      {
-        "date": "2023-11",
-        "price": 8441.5
-      },
-      {
-        "date": "2023-12",
-        "price": 8555.0
-      },
-      {
-        "date": "2024-01",
-        "price": 8603.5
-      },
-      {
-        "date": "2024-02",
-        "price": 8453.6
-      },
-      {
-        "date": "2024-03",
-        "price": 8826.2
-      },
-      {
-        "date": "2024-04",
-        "price": 10063.0
-      },
-      {
-        "date": "2024-05",
-        "price": 10163.3
-      },
-      {
-        "date": "2024-06",
-        "price": 9679.4
-      },
-      {
-        "date": "2024-07",
-        "price": 9171.2
-      },
-      {
-        "date": "2024-08",
-        "price": 9138.1
-      },
-      {
-        "date": "2024-10",
-        "price": 9509.6
-      },
-      {
-        "date": "2024-11",
-        "price": 8996.0
-      },
-      {
-        "date": "2025-01",
-        "price": 9396.1
-      },
-      {
-        "date": "2025-02",
-        "price": 9952.8
-      },
-      {
-        "date": "2025-03",
-        "price": 11067.2
-      },
-      {
-        "date": "2025-04",
-        "price": 10053.1
-      },
-      {
-        "date": "2025-05",
-        "price": 10257.0
-      },
-      {
-        "date": "2025-07",
-        "price": 9547.1
-      },
-      {
-        "date": "2025-08",
-        "price": 9961.6
-      },
-      {
-        "date": "2025-09",
-        "price": 10593.2
-      },
-      {
-        "date": "2025-10",
-        "price": 11167.5
-      },
-      {
-        "date": "2025-11",
-        "price": 11432.1
-      },
-      {
-        "date": "2025-12",
-        "price": 12412.0
-      },
-      {
-        "date": "2026-01",
-        "price": 13000.6
-      },
-      {
-        "date": "2026-04",
-        "price": 13064.6
-      },
-      {
-        "date": "2026-05",
-        "price": 14020.3
-      },
-      {
-        "date": "2026-06",
-        "price": 13652.1
-      },
-      {
-        "date": "2026-07",
-        "price": 14188.9
-      },
-      {
-        "date": "2026-08",
-        "price": 14737.9
-      }
-    ],
-    "aluminum": [
-      {
-        "date": "2023-09",
-        "price": 2329.5
-      },
-      {
-        "date": "2023-11",
-        "price": 2160.2
-      },
-      {
-        "date": "2023-12",
-        "price": 2332.2
-      },
-      {
-        "date": "2024-01",
-        "price": 2235.5
-      },
-      {
-        "date": "2024-02",
-        "price": 2167.5
-      },
-      {
-        "date": "2024-03",
-        "price": 2284.2
-      },
-      {
-        "date": "2024-04",
-        "price": 2561.2
-      },
-      {
-        "date": "2024-05",
-        "price": 2591.5
-      },
-      {
-        "date": "2024-06",
-        "price": 2457.2
-      },
-      {
-        "date": "2024-07",
-        "price": 2189.0
-      },
-      {
-        "date": "2024-08",
-        "price": 2342.5
-      },
-      {
-        "date": "2024-10",
-        "price": 2560.5
-      },
-      {
-        "date": "2024-11",
-        "price": 2562.0
-      },
-      {
-        "date": "2025-01",
-        "price": 2586.0
-      },
-      {
-        "date": "2025-02",
-        "price": 2561.5
-      },
-      {
-        "date": "2025-03",
-        "price": 2432.2
-      },
-      {
-        "date": "2025-04",
-        "price": 2292.8
-      },
-      {
-        "date": "2025-05",
-        "price": 2348.5
-      },
-      {
-        "date": "2025-07",
-        "price": 2446.8
-      },
-      {
-        "date": "2025-08",
-        "price": 2514.8
-      },
-      {
-        "date": "2025-09",
-        "price": 2594.0
-      },
-      {
-        "date": "2025-10",
-        "price": 2824.8
-      },
-      {
-        "date": "2025-11",
-        "price": 2808.0
-      },
-      {
-        "date": "2025-12",
-        "price": 2906.2
-      },
-      {
-        "date": "2026-01",
-        "price": 3034.5
-      },
-      {
-        "date": "2026-04",
-        "price": 3450.5
-      },
-      {
-        "date": "2026-05",
-        "price": 3917.8
-      },
-      {
-        "date": "2026-06",
-        "price": 3435.2
-      },
-      {
-        "date": "2026-07",
-        "price": 3334.8
-      },
-      {
-        "date": "2026-08",
-        "price": 3371.0
-      }
-    ],
-    "gold": [
-      {
-        "date": "2023-09",
-        "price": 1848.1
-      },
-      {
-        "date": "2023-11",
-        "price": 2038.1
-      },
-      {
-        "date": "2023-12",
-        "price": 2062.4
-      },
-      {
-        "date": "2024-01",
-        "price": 2048.4
-      },
-      {
-        "date": "2024-02",
-        "price": 2045.7
-      },
-      {
-        "date": "2024-03",
-        "price": 2217.4
-      },
-      {
-        "date": "2024-04",
-        "price": 2291.4
-      },
-      {
-        "date": "2024-05",
-        "price": 2322.9
-      },
-      {
-        "date": "2024-06",
-        "price": 2327.7
-      },
-      {
-        "date": "2024-07",
-        "price": 2426.5
-      },
-      {
-        "date": "2024-08",
-        "price": 2493.8
-      },
-      {
-        "date": "2024-10",
-        "price": 2738.3
-      },
-      {
-        "date": "2024-11",
-        "price": 2657.0
-      },
-      {
-        "date": "2025-01",
-        "price": 2812.5
-      },
-      {
-        "date": "2025-02",
-        "price": 2836.8
-      },
-      {
-        "date": "2025-03",
-        "price": 3122.8
-      },
-      {
-        "date": "2025-04",
-        "price": 3305.0
-      },
-      {
-        "date": "2025-05",
-        "price": 3288.9
-      },
-      {
-        "date": "2025-07",
-        "price": 3293.2
-      },
-      {
-        "date": "2025-08",
-        "price": 3473.7
-      },
-      {
-        "date": "2025-09",
-        "price": 3840.8
-      },
-      {
-        "date": "2025-10",
-        "price": 3982.2
-      },
-      {
-        "date": "2025-11",
-        "price": 4218.3
-      },
-      {
-        "date": "2025-12",
-        "price": 4325.6
-      },
-      {
-        "date": "2026-01",
-        "price": 4713.9
-      },
-      {
-        "date": "2026-04",
-        "price": 4614.7
-      },
-      {
-        "date": "2026-05",
-        "price": 4560.5
-      },
-      {
-        "date": "2026-06",
-        "price": 4022.9
-      },
-      {
-        "date": "2026-07",
-        "price": 4049.1
-      },
-      {
-        "date": "2026-08",
-        "price": 4662.0
-      }
-    ],
-    "silver": [
-      {
-        "date": "2023-09",
-        "price": 22.24
-      },
-      {
-        "date": "2023-11",
-        "price": 25.29
-      },
-      {
-        "date": "2023-12",
-        "price": 23.85
-      },
-      {
-        "date": "2024-01",
-        "price": 23.05
-      },
-      {
-        "date": "2024-02",
-        "price": 22.67
-      },
-      {
-        "date": "2024-03",
-        "price": 24.8
-      },
-      {
-        "date": "2024-04",
-        "price": 26.39
-      },
-      {
-        "date": "2024-05",
-        "price": 30.3
-      },
-      {
-        "date": "2024-06",
-        "price": 29.24
-      },
-      {
-        "date": "2024-07",
-        "price": 28.78
-      },
-      {
-        "date": "2024-08",
-        "price": 28.73
-      },
-      {
-        "date": "2024-10",
-        "price": 32.65
-      },
-      {
-        "date": "2024-11",
-        "price": 30.68
-      },
-      {
-        "date": "2025-01",
-        "price": 32.13
-      },
-      {
-        "date": "2025-02",
-        "price": 31.22
-      },
-      {
-        "date": "2025-03",
-        "price": 34.46
-      },
-      {
-        "date": "2025-04",
-        "price": 32.53
-      },
-      {
-        "date": "2025-05",
-        "price": 32.89
-      },
-      {
-        "date": "2025-07",
-        "price": 36.55
-      },
-      {
-        "date": "2025-08",
-        "price": 40.2
-      },
-      {
-        "date": "2025-09",
-        "price": 46.25
-      },
-      {
-        "date": "2025-10",
-        "price": 47.99
-      },
-      {
-        "date": "2025-11",
-        "price": 56.45
-      },
-      {
-        "date": "2025-12",
-        "price": 70.13
-      },
-      {
-        "date": "2026-01",
-        "price": 78.29
-      },
-      {
-        "date": "2026-04",
-        "price": 73.53
-      },
-      {
-        "date": "2026-05",
-        "price": 75.62
-      },
-      {
-        "date": "2026-06",
-        "price": 59.48
-      },
-      {
-        "date": "2026-07",
-        "price": 57.59
-      },
-      {
-        "date": "2026-08",
-        "price": 71.39
-      }
-    ],
-    "platinum": [
-      {
-        "date": "2023-09",
-        "price": 906.8
-      },
-      {
-        "date": "2023-11",
-        "price": 931.2
-      },
-      {
-        "date": "2023-12",
-        "price": 995.0
-      },
-      {
-        "date": "2024-01",
-        "price": 924.4
-      },
-      {
-        "date": "2024-02",
-        "price": 879.9
-      },
-      {
-        "date": "2024-03",
-        "price": 907.7
-      },
-      {
-        "date": "2024-04",
-        "price": 941.2
-      },
-      {
-        "date": "2024-05",
-        "price": 1037.7
-      },
-      {
-        "date": "2024-06",
-        "price": 1001.9
-      },
-      {
-        "date": "2024-07",
-        "price": 982.2
-      },
-      {
-        "date": "2024-08",
-        "price": 927.8
-      },
-      {
-        "date": "2024-10",
-        "price": 991.6
-      },
-      {
-        "date": "2024-11",
-        "price": 949.5
-      },
-      {
-        "date": "2025-01",
-        "price": 1033.2
-      },
-      {
-        "date": "2025-02",
-        "price": 932.3
-      },
-      {
-        "date": "2025-03",
-        "price": 1009.7
-      },
-      {
-        "date": "2025-04",
-        "price": 963.8
-      },
-      {
-        "date": "2025-05",
-        "price": 1051.7
-      },
-      {
-        "date": "2025-07",
-        "price": 1286.4
-      },
-      {
-        "date": "2025-08",
-        "price": 1365.7
-      },
-      {
-        "date": "2025-09",
-        "price": 1584.6
-      },
-      {
-        "date": "2025-10",
-        "price": 1569.8
-      },
-      {
-        "date": "2025-11",
-        "price": 1677.7
-      },
-      {
-        "date": "2025-12",
-        "price": 2034.5
-      },
-      {
-        "date": "2026-01",
-        "price": 2102.8
-      },
-      {
-        "date": "2026-04",
-        "price": 1979.0
-      },
-      {
-        "date": "2026-05",
-        "price": 1922.2
-      },
-      {
-        "date": "2026-06",
-        "price": 1550.2
-      },
-      {
-        "date": "2026-07",
-        "price": 1650.3
-      },
-      {
-        "date": "2026-08",
-        "price": 1879.3
-      }
-    ]
-  },
-  "forecast_data": {
-    "wti": {
-      "name": "WTI 원유 (CME)",
-      "unit": "USD/bbl",
-      "current_price": 82.99,
-      "forecast_6m_target": 78.5,
-      "forecast_change_rate": "-5.4%",
-      "direction": "하락",
-      "volatility_score": 78,
-      "planning_advisor": "**WTI 원유 가격은 중동 지정학적 리스크 완화 및 글로벌 원유 재고 증가에 따라 향후 6개월간 약 5.4% 하락할 전망입니다. 단기 반등이 예상되는 9~10월에는 스팟 위주의 최소 물량만 매안하고, 하락세가 심화되는 2027년 초에 장기 계약 체결을 추진하는 최적화 전략을 권장합니다.**",
-      "monthly_forecast": [
-        {
-          "month": "2026-09",
-          "price": 84.5,
-          "rationale": "북반구 드라이빙 시즌 막바지 수요 및 정유사 가동률 유지로 가격이 일시적 강보합세를 보일 것으로 예상됩니다."
-        },
-        {
-          "month": "2026-10",
-          "price": 86.2,
-          "rationale": "OPEC+ 감산 연장 논의 및 글로벌 정제설비 가을철 정기보수 돌입에 따른 휘발유/디젤 공급 차질 우려가 반영될 전망입니다."
-        },
-        {
-          "month": "2026-11",
-          "price": 83.1,
-          "rationale": "미국 대선 직후 에너지 정책 불확실성 해소 및 미 셰일오일 증산 기조 확인으로 유가 하방 압력이 강화될 것입니다."
-        },
-        {
-          "month": "2026-12",
-          "price": 81.5,
-          "rationale": "동절기 난방유 수요가 존재하나 글로벌 경기 둔화에 따른 산업용 원유 소비 감소가 이를 상쇄할 것으로 분석됩니다."
-        },
-        {
-          "month": "2027-01",
-          "price": 79.8,
-          "rationale": "비OPEC 국가들의 원유 생산량 확대 및 글로벌 원유 재고의 유의미한 축적으로 수급 불균형이 완화될 것입니다."
-        },
-        {
-          "month": "2027-02",
-          "price": 78.5,
-          "rationale": "중국 춘절 연휴 기간 정유 공장 가동 감소 및 글로벌 원유 수요 비성기 진입으로 약세 흐름이 지속될 전망입니다."
-        }
-      ]
-    },
-    "copper": {
-      "name": "전기동 (LME)",
-      "unit": "USD/ton",
-      "current_price": 14737.9,
-      "forecast_6m_target": 16350.0,
-      "forecast_change_rate": "+10.9%",
-      "direction": "상승",
-      "volatility_score": 85,
-      "planning_advisor": "**전기동 가격은 인공지능 데이터센터 증설과 전력망 투자의 급증으로 향후 6개월간 약 10.9% 상승하여 16,000달러 선을 돌파할 전망입니다. 공급 부족 압력이 극대화되기 전인 9~10월 중으로 내년 상반기 필요 물량의 70% 이상을 선제적으로 확보할 것을 강력히 권고합니다.**",
-      "monthly_forecast": [
-        {
-          "month": "2026-09",
-          "price": 14950.0,
-          "rationale": "글로벌 빅테크 기업들의 AI 데이터센터 전력망 구축 수요 급증으로 실물 동 정련재 프리미엄이 상승할 것으로 예상됩니다."
-        },
-        {
-          "month": "2026-10",
-          "price": 15200.0,
-          "rationale": "남미 주요 광산의 제련 수수료(TC/RC) 마이너스 전환 및 동 정광 공급 부족 심화로 제련소 감산이 현실화될 것입니다."
-        },
-        {
-          "month": "2026-11",
-          "price": 15550.0,
-          "rationale": "미국 금리 인하 기조와 미 달러화 약세 전환으로 비철금속 전반에 대한 투자 자금 유입이 대폭 확대될 전망입니다."
-        },
-        {
-          "month": "2026-12",
-          "price": 15800.0,
-          "rationale": "중국 신재생에너지 그리드망 연계 프로젝트 급격한 확장과 LME 창고 재고 고갈이 가격 상승을 자극할 것입니다."
-        },
-        {
-          "month": "2027-01",
-          "price": 16100.0,
-          "rationale": "유럽 완성차 업체들의 전기차 신모델 생산 본격화에 따른 구리 부품 매입 재개가 가격 고점을 높일 것입니다."
-        },
-        {
-          "month": "2027-02",
-          "price": 16350.0,
-          "rationale": "중국 춘절 이후 제조업 재가동을 앞둔 재고 축적(Restocking) 수요가 몰리며 최고치를 경신할 전망입니다."
-        }
-      ]
-    },
-    "aluminum": {
-      "name": "알루미늄 (LME)",
-      "unit": "USD/ton",
-      "current_price": 3371.0,
-      "forecast_6m_target": 3640.0,
-      "forecast_change_rate": "+8.0%",
-      "direction": "상승",
-      "volatility_score": 72,
-      "planning_advisor": "**알루미늄 가격은 보크사이트 공급 병목과 전력비 상승 영향으로 향후 6개월간 약 8.0% 상승할 전망입니다. 4분기 유럽 제련소 감산 리스크가 불거지기 전 현 시점에서 단기 필요 물량을 적극 매수하고 구매 호조세를 활용해 중기 헤징에 나서시기 바랍니다.**",
-      "monthly_forecast": [
-        {
-          "month": "2026-09",
-          "price": 3420.0,
-          "rationale": "기니 산 보크사이트 수출 규제 강화 소식으로 원자재 공급망 불안 요인이 가격에 선반영될 것입니다."
-        },
-        {
-          "month": "2026-10",
-          "price": 3480.0,
-          "rationale": "중국 윈난성 건기 진입에 따른 수력발전량 감소로 지역 알루미늄 제련소의 생산 제한 조치가 시행될 수 있습니다."
-        },
-        {
-          "month": "2026-11",
-          "price": 3510.0,
-          "rationale": "글로벌 항공기 제조업체들의 경량화 소재 주문 증가 및 자동차 경량화 트렌드가 실물 수요를 지지할 것입니다."
-        },
-        {
-          "month": "2026-12",
-          "price": 3560.0,
-          "rationale": "유럽 동절기 에너지 가격 상승에 따른 알루미나 제련 비용 인상이 최종 알루미늄 가격을 밀어올릴 전망입니다."
-        },
-        {
-          "month": "2027-01",
-          "price": 3600.0,
-          "rationale": "LME 지정 창고의 러시아산 알루미늄 비중 축적 완화 조치와 맞물려 유통 가능 재고 부족 현상이 나타날 것입니다."
-        },
-        {
-          "month": "2027-02",
-          "price": 3640.0,
-          "rationale": "태양광 모듈 프레임 및 건축용 소재 관련 대규모 발주 재개로 타이트한 수급 상태가 이어질 전망입니다."
-        }
-      ]
-    },
-    "gold": {
-      "name": "금 (LBMA)",
-      "unit": "USD/oz.t",
-      "current_price": 4662.0,
-      "forecast_6m_target": 5120.0,
-      "forecast_change_rate": "+9.8%",
-      "direction": "상승",
-      "volatility_score": 65,
-      "planning_advisor": "**금 가격은 글로벌 중앙은행들의 지속적인 매입 및 금리 인하 기대감으로 향후 6개월간 약 9.8% 상승하여 5,100달러를 돌파할 전망입니다. 가격 조정이 발생하는 눌림목 구간마다 헤징 목적의 자산을 순차적으로 분할 매수하는 전략이 유효합니다.**",
-      "monthly_forecast": [
-        {
-          "month": "2026-09",
-          "price": 4720.0,
-          "rationale": "미국 연준의 피벗(통화정책 전환) 가속화 전망에 따른 실질금리 하락으로 안전자산 선호 심리가 한층 강화될 것입니다."
-        },
-        {
-          "month": "2026-10",
-          "price": 4810.0,
-          "rationale": "중동 및 지정학적 불안 요인 지속과 신흥국 중앙은행들의 외환위기 대비 금 매수세 확대가 가격 상승을 견인합니다."
-        },
-        {
-          "month": "2026-11",
-          "price": 4900.0,
-          "rationale": "인도 디왈리 축제 시즌에 맞춘 대규모 실물 금 장신구 수요 집중이 단기 가격 급등을 유발할 수 있습니다."
-        },
-        {
-          "month": "2026-12",
-          "price": 4980.0,
-          "rationale": "연말 포트폴리오 재편을 노리는 기관 투자자들의 안전자산 비중 확대 및 달러화 약세 고착화가 호재로 작용합니다."
-        },
-        {
-          "month": "2027-01",
-          "price": 5050.0,
-          "rationale": "글로벌 경기 둔화 우려에 따른 헤지 펀드 자금의 귀금속 ETF 유입 가속화로 5,000달러 안착을 시도할 것입니다."
-        },
-        {
-          "month": "2027-02",
-          "price": 5120.0,
-          "rationale": "중국 춘절 맞이 예물 및 금화 실물 매입 폭증과 각국 상업은행들의 리저브 확충이 강세를 유지시킬 전망입니다."
-        }
-      ]
-    },
-    "silver": {
-      "name": "은 (LBMA)",
-      "unit": "USD/oz.t",
-      "current_price": 71.39,
-      "forecast_6m_target": 86.0,
-      "forecast_change_rate": "+20.5%",
-      "direction": "상승",
-      "volatility_score": 88,
-      "planning_advisor": "**은 가격은 태양광 패널 및 반도체 공정용 산업 수요의 폭발적 증가로 향후 6개월간 약 20.5% 급등할 전망입니다. 높은 변동성을 활용하여 9월 초 소폭 가격 조정 시 조기 대량 물량을 확보하는 스케일인 전략을 적극 추천합니다.**",
-      "monthly_forecast": [
-        {
-          "month": "2026-09",
-          "price": 73.2,
-          "rationale": "N형 태양광 셀 전환 가속화에 따른 실버 페이스트 소비 증가로 산업용 실물 은 수급이 크게 타이트해질 것입니다."
-        },
-        {
-          "month": "2026-10",
-          "price": 75.8,
-          "rationale": "금/은 비율(Gold-Silver Ratio)의 하락 전환과 함께 투자자들의 레버리지 자금 매수세가 유입될 전망입니다."
-        },
-        {
-          "month": "2026-11",
-          "price": 78.5,
-          "rationale": "글로벌 첨단 반도체 패키징 및 AI 기판 수요 확대에 따른 전자기기용 은 소재 출하량이 급증할 것입니다."
-        },
-        {
-          "month": "2026-12",
-          "price": 81.0,
-          "rationale": "LBMA 및 COMEX 지정 창고의 실물 은 재고가 사상 최저 수준으로 감소하며 쇼트 스퀴즈 가능성이 제기됩니다."
-        },
-        {
-          "month": "2027-01",
-          "price": 83.5,
-          "rationale": "친환경 밸류체인 기업들의 연초 재고 확보 경쟁과 맞물려 산업용 은 프리미엄이 급격히 확장될 전망입니다."
-        },
-        {
-          "month": "2027-02",
-          "price": 86.0,
-          "rationale": "5G 통신장비 및 차세대 전기차 전장부품 수요 가속화가 과열 양상을 띠며 최고가를 신기록할 것입니다."
-        }
-      ]
-    },
-    "platinum": {
-      "name": "백금 (CME)",
-      "unit": "USD/oz.t",
-      "current_price": 1879.3,
-      "forecast_6m_target": 2100.0,
-      "forecast_change_rate": "+11.7%",
-      "direction": "상승",
-      "volatility_score": 80,
-      "planning_advisor": "**백금 가격은 남아공 광산의 전력난에 따른 생산 차질과 수소 경제 본격화로 향후 6개월간 약 11.7% 상승할 전망입니다. 2,000달러 돌파 전인 4분기 초반에 장기 정기 공급 계약을 체결하여 가격 불확실성을 완화하시기 바랍니다.**",
-      "monthly_forecast": [
-        {
-          "month": "2026-09",
-          "price": 1910.0,
-          "rationale": "남아프리카공화국 주요 백금 광산의 구조적 전력 부족과 전력망 정체로 인한 주봉 단위 생산량 단축이 여파를 미칠 것입니다."
-        },
-        {
-          "month": "2026-10",
-          "price": 1950.0,
-          "rationale": "수전해 수소 생산 설비(PEM) 설치 증가로 인한 촉매용 백금 수요의 구조적 급증이 시장에 부각될 전망입니다."
-        },
-        {
-          "month": "2026-11",
-          "price": 1980.0,
-          "rationale": "하이브리드 자동차의 정밀 촉매 변환기 부품 대체 수요(팔라듐 대비 가격 경쟁력) 지속이 실물 수요를 받칩니다."
-        },
-        {
-          "month": "2026-12",
-          "price": 2020.0,
-          "rationale": "글로벌 파운드리 및 석유화학 정제용 백금 촉매 교체 주기 도래로 산업용 대형 수주가 집중될 예정입니다."
-        },
-        {
-          "month": "2027-01",
-          "price": 2060.0,
-          "rationale": "러시아 산 백금족 금속(PGM)에 대한 선진국의 추가 제재 가능성에 따라 물리적 유통망 차질 우려가 심화됩니다."
-        },
-        {
-          "month": "2027-02",
-          "price": 2100.0,
-          "rationale": "수소 연료전지차(FCEV) 상용화 확대 및 귀금속 펀드의 PGM 포트폴리오 비중 확대로 2,100달러에 도달할 전망입니다."
-        }
-      ]
+function doGet(e) {
+  var template = HtmlService.createTemplateFromFile('index');
+  
+  template.randomImageFile = 'image_data1';
+  
+  var greetings = ["행복 가득한 하루 되세요!", "오늘도 힘내세요!", "성공적인 하루를 응원합니다.", "오늘은 부디 칼퇴하세요!", "내일도 부디 칼퇴하세요!", "머리아픈 일은 다음에 하세요!", "오늘은 이쁜말만 하세요", "졸리면 어디가서 자고오세요", "주말에는 가족과 함께!"];
+  template.randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+  template.archivedNews = JSON.stringify(getArchivedNews());
+  
+  return template.evaluate()
+      .setTitle('메-SRM')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function getUserDetails() {
+  let email = 'Unknown';
+  try { 
+      email = Session.getActiveUser().getEmail(); 
+  } catch(e) { 
+      Logger.log("getActiveUser() 에러: " + e.toString());
+  }
+  
+  // 구글 보안 정책 및 멀티 로그인 이슈로 getEmail()이 빈 값("")을 반환할 수 있으므로 강력한 폴백 구성
+  if (!email || email.trim() === "" || email === "Unknown") {
+    try {
+      email = Session.getEffectiveUser().getEmail();
+    } catch(e) {
+      email = 'dohee.cho@ai.samsunghealthcare.com';
     }
+  }
+  
+  const userId = email.split('@')[0];
+  let userName = "";
+  let deptName = "";
+  
+  // 로컬 폴백용 사용자 정보 맵 (스프레드시트가 연동 해제되거나 시트 에러가 발생해도 완벽 작동하도록 구성)
+  const userFallbackMap = {
+    "dohee.cho": { name: "조도희", dept: "구매그룹" },
+    "hm2521.kwon": { name: "권혁민", dept: "구매그룹" },
+    "ky3247.kim": { name: "김경율", dept: "구매그룹" },
+    "nt.kim": { name: "김나단", dept: "구매그룹" },
+    "mh501.kim": { name: "김미현", dept: "구매그룹" },
+    "kmjun.kim": { name: "김민준", dept: "구매그룹" },
+    "yumi91.kim": { name: "김유미", dept: "구매그룹" },
+    "yubeom.kim": { name: "김유범", dept: "구매그룹" },
+    "es0901.kim": { name: "김은선", dept: "구매그룹" },
+    "jung.bae.kim": { name: "김정배", dept: "구매그룹" },
+    "jinchul2.kim": { name: "김진철", dept: "구매그룹" },
+    "hr1206.kim": { name: "김효령", dept: "구매그룹" },
+    "seongoh.noh": { name: "노성오", dept: "구매그룹" },
+    "sehyun4.park": { name: "박세현", dept: "구매그룹" },
+    "jy3124.park": { name: "박재용", dept: "구매그룹" },
+    "jps.baek": { name: "백정필", dept: "구매그룹" },
+    "jungjin.seo": { name: "서정진", dept: "구매그룹" },
+    "juwon.seo": { name: "서주원", dept: "구매그룹" },
+    "mjnew.wang": { name: "왕민정", dept: "구매그룹" },
+    "sangduek.lee": { name: "이상득", dept: "구매그룹" },
+    "eunho3.lee": { name: "이은호", dept: "구매그룹" },
+    "je0408.lee": { name: "이정은", dept: "구매그룹" },
+    "sujin.jeong": { name: "정수진", dept: "구매그룹" },
+    "jinsang.jung": { name: "정진상", dept: "구매그룹" },
+    "hyoseok.cho": { name: "조효석", dept: "구매그룹" },
+    "jisoon8.park": { name: "박지순", dept: "구매그룹" },
+    "tu.kang": { name: "강태욱", dept: "구매그룹" },
+    "syn.joo": { name: "주승연", dept: "구매그룹" }
+  };
+
+  let loadedFromSheet = false;
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) {
+      const sheet = ss.getSheetByName("사용자정보");
+      if (sheet) {
+        const lastRow = sheet.getLastRow();
+        if (lastRow > 1) {
+          const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+          for (let i = 0; i < data.length; i++) {
+            if (data[i][0] && String(data[i][0]).trim() === userId) {
+              if (data[i][1]) userName = String(data[i][1]).trim();
+              if (data[i][2]) deptName = String(data[i][2]).trim();
+              loadedFromSheet = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log("getUserDetails 스프레드시트 로드 에러: " + e.toString());
+  }
+  
+  // 스프레드시트 로드가 실패했거나 사용자가 없는 경우 로컬 폴백 맵 적용
+  if (!loadedFromSheet || !userName) {
+    const fallbackUser = userFallbackMap[userId];
+    if (fallbackUser) {
+      userName = fallbackUser.name;
+      deptName = fallbackUser.dept;
+    } else {
+      userName = userId ? userId.toUpperCase() : "사용자";
+      deptName = "구매그룹";
+    }
+  }
+  
+  return {
+    email: email,
+    id: userId,
+    name: userName,
+    dept: deptName
+  };
+}
+
+function logAccess(moduleTitle) {
+  try {
+    const logSpreadsheetId = "1-qBeuf94mvboL0zZkfVgEAtgKsZiAAD6A6d9XjPlwb8";
+    const ss = SpreadsheetApp.openById(logSpreadsheetId);
+    let logSheet = ss.getSheetByName("접속로그") || ss.insertSheet("접속로그");
+    
+    if (logSheet.getLastRow() === 0) {
+      logSheet.appendRow(["접속시간", "접속자ID", "접속모듈"]);
+      logSheet.getRange("A1:C1").setBackground("#D3D3D3").setFontWeight("bold");
+    }
+    
+    let userEmail = "";
+    try { userEmail = Session.getActiveUser().getEmail(); } catch(e) {}
+    const userId = userEmail ? userEmail.split('@')[0] : "Unknown";
+    
+    logSheet.appendRow([new Date(), userId, moduleTitle]);
+  } catch (e) {
+  }
+}
+
+function fetchUserDeptAndName() {
+  try {
+    let email = '';
+    try {
+      email = Session.getActiveUser().getEmail();
+    } catch(e) {}
+    
+    if (!email || email.trim() === "" || email === "Unknown") {
+      try {
+        email = Session.getEffectiveUser().getEmail();
+      } catch(e) {
+        email = 'dohee.cho@ai.samsunghealthcare.com';
+      }
+    }
+    
+    const userId = email.split('@')[0];
+    
+    // 로컬 폴백용 사용자 정보 맵
+    const userFallbackMap = {
+      "dohee.cho": { name: "조도희", dept: "구매그룹" },
+      "hm2521.kwon": { name: "권혁민", dept: "구매그룹" },
+      "ky3247.kim": { name: "김경율", dept: "구매그룹" },
+      "nt.kim": { name: "김나단", dept: "구매그룹" },
+      "mh501.kim": { name: "김미현", dept: "구매그룹" },
+      "kmjun.kim": { name: "김민준", dept: "구매그룹" },
+      "yumi91.kim": { name: "김유미", dept: "구매그룹" },
+      "yubeom.kim": { name: "김유범", dept: "구매그룹" },
+      "es0901.kim": { name: "김은선", dept: "구매그룹" },
+      "jung.bae.kim": { name: "김정배", dept: "구매그룹" },
+      "jinchul2.kim": { name: "김진철", dept: "구매그룹" },
+      "hr1206.kim": { name: "김효령", dept: "구매그룹" },
+      "seongoh.noh": { name: "노성오", dept: "구매그룹" },
+      "sehyun4.park": { name: "박세현", dept: "구매그룹" },
+      "jy3124.park": { name: "박재용", dept: "구매그룹" },
+      "jps.baek": { name: "백정필", dept: "구매그룹" },
+      "jungjin.seo": { name: "서정진", dept: "구매그룹" },
+      "juwon.seo": { name: "서주원", dept: "구매그룹" },
+      "mjnew.wang": { name: "왕민정", dept: "구매그룹" },
+      "sangduek.lee": { name: "이상득", dept: "구매그룹" },
+      "eunho3.lee": { name: "이은호", dept: "구매그룹" },
+      "je0408.lee": { name: "이정은", dept: "구매그룹" },
+      "sujin.jeong": { name: "정수진", dept: "구매그룹" },
+      "jinsang.jung": { name: "정진상", dept: "구매그룹" },
+      "hyoseok.cho": { name: "조효석", dept: "구매그룹" },
+      "jisoon8.park": { name: "박지순", dept: "구매그룹" },
+      "tu.kang": { name: "강태욱", dept: "구매그룹" },
+      "syn.joo": { name: "주승연", dept: "구매그룹" }
+    };
+    
+    let loaded = false;
+    let displayName = "";
+    try {
+      const ss = SpreadsheetApp.openById("1-qBeuf94mvboL0zZkfVgEAtgKsZiAAD6A6d9XjPlwb8");
+      const sheet = ss.getSheetByName("사용자정보");
+      if (sheet) {
+        const data = sheet.getDataRange().getDisplayValues();
+        for (let i = 0; i < data.length; i++) {
+          if (data[i][0] === userId) {
+            const name = data[i][1] || '';
+            const dept = data[i][2] || '';
+            displayName = dept ? `${dept} ${name}` : name;
+            loaded = true;
+            break;
+          }
+        }
+      }
+    } catch(e) {
+    }
+    
+    if (!loaded || !displayName) {
+      const fallbackUser = userFallbackMap[userId];
+      if (fallbackUser) {
+        displayName = `${fallbackUser.dept} ${fallbackUser.name}`;
+      } else {
+        displayName = `구매그룹 ${userId ? userId.toUpperCase() : "USER"}`;
+      }
+    }
+    return displayName;
+  } catch (e) {
+    return "구매그룹 조도희";
+  }
+}
+
+function checkUserFullAccess(email) {
+  try {
+    if (!email) {
+      try {
+        email = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail() || 'dohee.cho@ai.samsunghealthcare.com';
+      } catch(e) {
+        email = 'dohee.cho@ai.samsunghealthcare.com';
+      }
+    }
+    const userId = email.split('@')[0];
+    const ss = SpreadsheetApp.openById("1-qBeuf94mvboL0zZkfVgEAtgKsZiAAD6A6d9XjPlwb8"); 
+    const sheet = ss.getSheetByName("사용자정보");
+    if (!sheet) return false;
+    const data = sheet.getDataRange().getValues();
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0] === userId) {
+        return String(data[i][3]).trim().toUpperCase() === 'Y';
+      }
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+function buildRssRequest(query, isDomestic) {
+  let encodedQuery = encodeURIComponent(query); 
+  let url = isDomestic
+    ? `https://news.google.com/rss/search?q=${encodedQuery}&hl=ko&gl=KR&ceid=KR:ko`
+    : `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-US&gl=US&ceid=US:en`;
+  
+  return {
+    url: url,
+    method: "get",
+    muteHttpExceptions: true
+  };
+}
+
+function parseRssResponse(xml, query) {
+  let newsList = [];
+  if (!xml) return newsList;
+  
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  
+  try {
+    let itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g);
+    if (itemMatches) {
+      for (let i = 0; i < itemMatches.length; i++) {
+        let itemXml = itemMatches[i];
+        
+        let pubDateStr = (itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || ["", ""])[1];
+        let rawDate = new Date(pubDateStr);
+        
+        if (rawDate >= oneWeekAgo) {
+          let title = (itemXml.match(/<title>([\s\S]*?)<\/title>/) || ["", ""])[1]
+                        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+                        .replace(/&lt;!\[CDATA\[([\s\S]*?)\]\]&gt;/g, "$1")
+                        .replace(/<\/?[^>]+(>|$)/g, ""); // HTML 태그 제거
+          
+          let link = (itemXml.match(/<link>([\s\S]*?)<\/link>/) || ["", "#"])[1];
+          
+          newsList.push({ supplier: query, title: title, link: link, pubDate: pubDateStr, rawDate: rawDate });
+        }
+      }
+    }
+  } catch (error) {
+    Logger.log("정규식 파싱 오류, XmlService로 폴백 시도: " + error.toString());
+    try {
+      let document = XmlService.parse(xml);
+      let root = document.getRootElement();
+      let channel = root.getChild('channel');
+      if (channel) {
+        let items = channel.getChildren('item');
+        for (let i = 0; i < items.length; i++) {
+          let pubDateStr = items[i].getChildText('pubDate') || new Date().toUTCString();
+          let rawDate = new Date(pubDateStr);
+          if (rawDate >= oneWeekAgo) {
+            let title = items[i].getChildText('title') || '';
+            let link = items[i].getChildText('link') || '#';
+            newsList.push({ supplier: query, title: title, link: link, pubDate: pubDateStr, rawDate: rawDate });
+          }
+        }
+      }
+    } catch(xmlErr) {
+      Logger.log("XmlService 폴백 실패: " + xmlErr.toString());
+    }
+  }
+  
+  newsList.sort((a, b) => b.rawDate - a.rawDate);
+  return newsList.slice(0, 10);
+}
+
+function saveNewsToArchive(domestic, overseas, updateTimeStr) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("뉴스보관");
+    
+    if (!sheet) {
+      sheet = ss.insertSheet("뉴스보관");
+      sheet.appendRow(["구분", "협력사", "기사제목", "링크", "발행일", "업데이트일시"]);
+      sheet.getRange("A1:F1").setBackground("#D3D3D3").setFontWeight("bold");
+    }
+    
+    let dataArr = [];
+    domestic.forEach(item => {
+      dataArr.push(["국내", item.supplier, item.title, item.link, item.pubDate, updateTimeStr]);
+    });
+    overseas.forEach(item => {
+      dataArr.push(["해외", item.supplier, item.title, item.link, item.pubDate, updateTimeStr]);
+    });
+    
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).clearContent();
+    }
+    
+    if (dataArr.length > 0) {
+      sheet.getRange(2, 1, dataArr.length, 6).setValues(dataArr);
+    }
+  } catch(e) {
+    Logger.log("[뉴스보관 오류] " + e.toString());
+  }
+}
+
+function getArchivedNews() {
+  let result = { domestic: [], overseas: [], lastUpdated: "" };
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("뉴스보관");
+    if (!sheet) return result;
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return result;
+    
+    const data = sheet.getRange(2, 1, lastRow - 1, 6).getDisplayValues(); 
+    
+    data.forEach(row => {
+      const [type, supplier, title, link, pubDate, updateDate] = row;
+      
+      if (!result.lastUpdated && updateDate) result.lastUpdated = updateDate; 
+      
+      const item = { supplier: supplier, title: title, link: link, pubDate: pubDate };
+      if (type === "국내") result.domestic.push(item);
+      else if (type === "해외") result.overseas.push(item);
+    });
+  } catch(e) {
+    Logger.log("[아카이브 로드 오류] " + e.toString());
+  }
+  return result;
+}
+
+function getSupplierNews(forceUpdate) { 
+  try {
+    const cache = CacheService.getScriptCache();
+    if (!forceUpdate) {
+      const cachedData = cache.get("supplier_news_data");
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    }
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("뉴스");
+    if (!sheet) throw new Error("'뉴스' 시트를 찾을 수 없습니다.");
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { domestic: [], overseas: [], lastUpdated: "" };
+    
+    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    
+    let requests = [];
+    let requestMeta = []; 
+    
+    for (let i = 0; i < data.length; i++) {
+      let supplier = String(data[i][0]).trim();
+      let regionType = String(data[i][1]).trim();
+      if (!supplier) continue;
+      
+      let isDomestic = (regionType.indexOf('국내') !== -1);
+      let isOverseas = (regionType.indexOf('해외') !== -1 || regionType.indexOf('국외') !== -1);
+      
+      if (isDomestic) {
+        requests.push(buildRssRequest(supplier, true));
+        requestMeta.push({ supplier: supplier, isDomestic: true });
+      } else if (isOverseas) {
+        requests.push(buildRssRequest(supplier, false));
+        requestMeta.push({ supplier: supplier, isDomestic: false });
+      }
+    }
+    
+    if (requests.length === 0) return { domestic: [], overseas: [], lastUpdated: "" };
+    
+    let responses = UrlFetchApp.fetchAll(requests);
+    let domestic = [];
+    let overseas = [];
+    
+    for (let i = 0; i < responses.length; i++) {
+      let res = responses[i];
+      let meta = requestMeta[i];
+      if (res.getResponseCode() === 200) {
+        let xml = res.getContentText();
+        let parsedNews = parseRssResponse(xml, meta.supplier);
+        
+        if (meta.isDomestic) {
+          domestic = domestic.concat(parsedNews);
+        } else {
+          overseas = overseas.concat(parsedNews);
+        }
+      }
+    }
+    const sortByDate = (a, b) => new Date(b.pubDate) - new Date(a.pubDate);
+    domestic.sort(sortByDate);
+    overseas.sort(sortByDate);
+    
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const nowStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    
+    const cleanDomestic = domestic.map(item => ({ supplier: item.supplier, title: item.title, link: item.link, pubDate: item.pubDate }));
+    const cleanOverseas = overseas.map(item => ({ supplier: item.supplier, title: item.title, link: item.link, pubDate: item.pubDate }));
+    
+    let result = { domestic: cleanDomestic, overseas: cleanOverseas, lastUpdated: nowStr };
+    let jsonString = JSON.stringify(result);
+    
+    saveNewsToArchive(domestic, overseas, nowStr);
+    
+    try {
+      if (jsonString.length < 90000) {
+        cache.put("supplier_news_data", jsonString, 1800); 
+      }
+    } catch(cacheError) {
+      Logger.log("[뉴스] 캐시 에러 무시: " + cacheError.toString());
+    }
+    
+    return result;
+  } catch (e) {
+    Logger.log("[뉴스 치명적 오류] " + e.toString());
+    throw new Error(e.message || e.toString());
+  }
+}
+
+function getExchangeRateData() {
+  try {
+    const ssId = '15mDVNS3jFIX4mNdu0OEHMTaHgDbwvNDSmBp7OxHsH9k';
+    const ss = SpreadsheetApp.openById(ssId);
+    const sheet = ss.getSheetByName('CurrRaw');
+    
+    if (!sheet) {
+      return { success: false, message: "'CurrRaw' 시트를 찾을 수 없습니다." };
+    }
+    const table1 = sheet.getRange('C5:G8').getDisplayValues();
+    const table2 = sheet.getRange('I5:M8').getDisplayValues();
+    return {
+      success: true,
+      table1: table1,
+      table2: table2
+    };
+  } catch (e) {
+    Logger.log("환율 데이터 로드 오류: " + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+function getRandomGreeting() {
+  const greetings = [
+    "행복 가득한 하루 되세요!",
+    "오늘도 힘내세요!",
+    "성공적인 하루를 응원합니다.",
+    "오늘은 부디 칼퇴하세요!",
+    "내일도 부디 칼퇴하세요!",
+    "머리아픈 일은 다음에 하세요!",
+    "오늘은 이쁜말만 하세요",
+    "졸리면 어디가서 자고오세요",
+    "주말에는 가족과 함께!"
+  ];
+  const randomIndex = Math.floor(Math.random() * greetings.length);
+  return greetings[randomIndex];
+}
+
+function getMenuLinks() {
+  try {
+    const ss = SpreadsheetApp.openById("1-qBeuf94mvboL0zZkfVgEAtgKsZiAAD6A6d9XjPlwb8");
+    const sheet = ss.getSheetByName("바로가기");
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getDisplayValues();
+    const menuGroups = [];
+    let currentGroup = [];
+    let currentGroupNum = null;
+    
+    for (let i = 1; i < data.length; i++) {
+      const groupNum = data[i][0];
+      const title = data[i][1];
+      const url = data[i][2];
+      const icon = data[i][3] ? String(data[i][3]).trim() : "bi-gear-wide-connected";
+      const inactiveFlag = data[i][4] ? String(data[i][4]).trim().toUpperCase() : "";
+      const isInactiveFromSheet = (inactiveFlag === 'Y');
+      
+      if (!title || !url) continue;
+      if (currentGroupNum !== groupNum) {
+        if (currentGroup.length > 0) {
+          menuGroups.push(currentGroup);
+        }
+        currentGroup = [];
+        currentGroupNum = groupNum;
+      }
+      currentGroup.push({ title: title, url: url, icon: icon, isInactiveFromSheet: isInactiveFromSheet });
+    }
+    
+    if (currentGroup.length > 0) {
+      menuGroups.push(currentGroup);
+    }
+    
+    return menuGroups;
+  } catch (e) {
+    console.error("메뉴 데이터 가져오기 실패: " + e.message);
+    return [];
   }
 }
