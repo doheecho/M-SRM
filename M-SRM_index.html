@@ -9,21 +9,33 @@
     #global-header .btn-icon-menu svg { width: 22px; height: 22px; }
     #global-header .btn-icon-menu::after { display: none; }
     #global-header .dropdown-item {font-size: 0.9rem; font-weight: 700; }
-    #global-header .user-info-text {a font-size: 0.9rem; font-weight: 500; color: #E0E0E0; }
+    #global-header .user-info-text { font-size: 0.9rem; font-weight: 500; color: #E0E0E0; }
     #global-header .confidential-text { font-size: 0.9rem; font-weight: 700; color: #FF5274; margin-left: 15px; }
     #global-header .dropdown-divider { margin: 0.3rem 0; }
 </style>
 
 <script>
-    function renderHeaderUI(userEmail, moduleTitle, menuGroups = []) {
+    function renderHeaderUI(userInfo, moduleTitle, menuGroups = []) {
         let headerElement = document.getElementById('global-header');
         if (!headerElement) {
             headerElement = document.createElement('header');
             headerElement.id = 'global-header';
             document.body.insertBefore(headerElement, document.body.firstChild);
         }
+        
         let initialName = 'USER';
-        if (userEmail) initialName = userEmail.split('@')[0].toUpperCase();
+        let isObject = (userInfo && typeof userInfo === 'object');
+        
+        if (isObject) {
+            if (userInfo.dept) {
+                initialName = `${userInfo.dept} ${userInfo.name}`;
+            } else {
+                initialName = userInfo.name || 'USER';
+            }
+        } else if (userInfo && typeof userInfo === 'string') {
+            initialName = userInfo.split('@')[0].toUpperCase();
+        }
+        
         if (!window.initialConnectTime) {
             const now = new Date();
             const pad = (num) => String(num).padStart(2, '0');
@@ -58,6 +70,10 @@
             html += `<li><a class="dropdown-item text-muted" href="#">메뉴 로딩중...</a></li>`;
         }
         
+        // Add theme toggle at the bottom of GNB in index.html too
+        html += `<li><hr class="dropdown-divider"></li>`;
+        html += `<li><a class="dropdown-item" href="javascript:void(0)" onclick="toggleTheme()" id="theme-toggle-btn">테마설정: Dark</a></li>`;
+        
         html += `
                     </ul>
                 </div>
@@ -66,7 +82,7 @@
         `;
         
         headerElement.innerHTML = html;
-        if (google && google.script && google.script.run) {
+        if (!isObject && google && google.script && google.script.run) {
             google.script.run.withSuccessHandler(function(fullName) {
                 const nameSpan = document.getElementById('dynamic-user-name');
                 if (nameSpan && fullName) {
@@ -74,6 +90,7 @@
                 }
             }).fetchUserDeptAndName();
         }
+        applyTheme(localStorage.getItem('srm-theme') || 'light');
     }
 </script>
 
@@ -87,68 +104,266 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; overflow-x: hidden; width: 100%; }
+        /* ==========================================
+           THEME STYLES (Light & Dark Configuration)
+           ========================================== */
+        
+        /* 1. LIGHT THEME (Default) */
+        :root {
+            --bg-body: rgb(248,249,250);
+            --bg-card: #ffffff;
+            --border-color: #e0e4e8;
+            --text-main: #333333;
+            --text-body: #555555;
+            --text-muted: #888888;
+            
+            --portal-btn-bg: #E3F2FD;
+            --portal-btn-border: #BBDEFB;
+            --portal-btn-color: #0D47A1;
+            --portal-btn-icon-bg: #29B6F6;
+            --portal-btn-icon-color: #ffffff;
+            --portal-btn-hover-bg: #1428A0;
+            --portal-btn-hover-color: #ffffff;
+            
+            --work-link-bg: #E3F2FD;
+            --work-link-border: #BBDEFB;
+            --work-link-color: #0D47A1;
+            --work-link-hover-bg: #1428A0;
+            --work-link-hover-color: #ffffff;
+            
+            --badge-bg: #1428A0;
+            --badge-color: #ffffff;
+            --badge-radius: 50rem;
+            
+            --table-th-bg: #E3F2FD;
+            --table-th-color: #1428A0;
+            --table-border: #e0e4e8;
+            --table-hover-bg: #f8f9fa;
+            
+            --up-color: #DC3545;
+            --down-color: #0D6EFD;
+        }
+
+        /* 2. DARK THEME (Overrides - Custom Designed to strict spec) */
+        body.dark-theme {
+            --bg-body: rgb(15,18,22);          /* 전체메인화면 기본배경색 */
+            --bg-card: rgb(15,18,22);          /* 전체메인화면 기본배경색 */
+            --border-color: rgb(64,56,40);     /* 테두리색상 */
+            --text-main: rgb(242,242,242);    /* 뉴스 제목 */
+            --text-body: rgb(255,255,255);    /* 주요 제목 */
+            --text-muted: rgb(217,217,217);   /* 작성시간 등 */
+            
+            --portal-btn-bg: rgb(34,35,34);    /* 도형배경색상 */
+            --portal-btn-border: rgb(183,121,17); /* 라인색상 */
+            --portal-btn-color: rgb(246,146,17);  /* BI도형 아래 폰트색상 */
+            --portal-btn-icon-bg: rgb(246,146,17); /* BI도형 색상 */
+            --portal-btn-icon-color: rgb(64,56,40); /* BI도형 아이콘 자체 색상 */
+            --portal-btn-hover-bg: rgb(183,121,17);
+            --portal-btn-hover-color: rgb(255,255,255);
+            
+            --work-link-bg: rgb(34,35,34);     /* 업무사이트 하단 버튼 셀배경 */
+            --work-link-border: rgb(183,121,17); /* 업무사이트 하단 버튼 테두리 */
+            --work-link-color: rgb(246,146,17);  /* 업무사이트 하단 버튼 폰트색상 */
+            --work-link-hover-bg: rgb(183,121,17);
+            --work-link-hover-color: rgb(255,255,255);
+            
+            --badge-bg: rgb(246,146,17);       /* 뉴스갯수 동그라미 배경 */
+            --badge-color: rgb(255,255,255);   /* 뉴스갯수 동그라미 폰트 */
+            --badge-radius: 50rem;
+            
+            --table-th-bg: rgb(34,35,34);      /* 환율 표의 제목행 셀배경 */
+            --table-th-color: rgb(246,146,17);  /* 환율 표의 제목행 폰트 */
+            --table-border: rgb(64,56,40);
+            --table-hover-bg: rgba(64,56,40,0.3);
+            
+            --up-color: #ef4444;              /* --up */
+            --down-color: #3b82f6;            /* --down */
+        }
+        body.dark-theme {
+            background-color: rgb(15,18,22) !important;
+        }
+        body.dark-theme #global-header {
+            background-color: rgb(36,36,36) !important;
+        }
+        body.dark-theme #global-header .module-title {
+            color: rgb(246,146,17) !important;
+        }
+        body.dark-theme #global-header .user-info-text,
+        body.dark-theme #global-header .user-info-text span,
+        body.dark-theme #global-header #dynamic-user-name,
+        body.dark-theme #global-header #dropdownMenuButton {
+            color: rgb(217,217,217) !important;
+            border-color: rgb(217,217,217) !important;
+        }
+        body.dark-theme .news-wrapper {
+            background-color: rgb(15,18,22) !important;
+            border-color: rgb(64,56,40) !important;
+        }
+        body.dark-theme .news-header {
+            border-bottom: 2px solid rgb(246,146,17) !important; /* 환율정보와 업무사이트 하단 바 & 뉴스 하단 바 */
+        }
+        body.dark-theme .news-title {
+            color: rgb(255,255,255) !important; /* 주요 제목 */
+        }
+        body.dark-theme .news-category-summary {
+            color: rgb(191,191,191) !important; /* 뉴스 제목 아래의 회색 폰트 (조금 어두운 191,191,191) */
+        }
+        body.dark-theme .category-pill {
+            color: rgb(191,191,191) !important; /* 실적, 주가, Risk 등 항목별 글자 폰트색 */
+        }
+        body.dark-theme .news-item {
+            border-bottom-color: rgb(64,56,40) !important;
+        }
+        body.dark-theme .news-item-supplier {
+            color: rgb(246,146,17) !important;   /* 협력사 이름 폰트 */
+            background-color: rgb(64,56,40) !important; /* 협력사 이름 네모 배경 */
+        }
+        body.dark-theme .news-item-date {
+            color: rgb(217,217,217) !important; /* 뉴스 작성시간 */
+        }
+        body.dark-theme .news-item-link {
+            color: rgb(242,242,242) !important; /* 뉴스 제목 */
+        }
+        body.dark-theme .news-item-link:hover {
+            color: rgb(246,146,17) !important;
+        }
+        body.dark-theme .exchange-table-title {
+            color: rgb(255,255,255) !important; /* 오늘의 환율 / 기간 평균환율 */
+        }
+        body.dark-theme .exchange-table th {
+            color: rgb(246,146,17) !important;    /* 환율 표 제목행 폰트 */
+            background-color: rgb(34,35,34) !important; /* 환율 표 제목행 셀배경 */
+            border-color: rgb(64,56,40) !important;
+        }
+        body.dark-theme .exchange-table td {
+            color: rgb(255,255,255); /* 환율 표 내용 폰트 (Not important to allow inline colors for +/-) */
+            border-color: rgb(64,56,40) !important;
+        }
+        body.dark-theme .work-link-btn {
+            border-color: rgb(183,121,17) !important; /* 테두리 */
+            background-color: rgb(34,35,34) !important;  /* 셀배경 */
+            color: rgb(246,146,17) !important;          /* 글자색상 */
+        }
+        body.dark-theme .work-link-btn:hover {
+            background-color: rgb(183,121,17) !important;
+            color: rgb(255,255,255) !important;
+            border-color: rgb(246,146,17) !important;
+        }
+        body.dark-theme #news-update-btn {
+            color: rgb(246,146,17) !important;        /* 글자색: 업무 사이트 내 각 버튼들의 폰트색과 동일 */
+            border-color: rgb(246,146,17) !important; /* 테두리색: 업무 사이트 내 각 버튼들의 폰트색과 동일 */
+            background-color: transparent !important; /* 배경은 넣지말고 */
+        }
+        body.dark-theme #news-update-btn:hover {
+            background-color: rgb(246,146,17) !important;
+            color: rgb(15,18,22) !important;
+        }
+        body.dark-theme .greeting-box {
+            background-color: rgb(15,18,22) !important;
+            border-color: rgb(64,56,40) !important;
+        }
+        body.dark-theme #user-name-display {
+            color: rgb(255,255,255) !important; /* 접속자명 + 님 */
+        }
+        body.dark-theme #user-name-display span:first-child {
+            color: rgb(217,217,217) !important; /* 부서 */
+        }
+        body.dark-theme #greeting-message-display {
+            color: rgb(217,217,217) !important; /* 그리팅문구 */
+        }
+        body.dark-theme #greeting-refresh-btn,
+        body.dark-theme #greeting-refresh-btn i {
+            color: rgb(217,217,217) !important; /* Refresh */
+        }
+
+        /* 3. Base Layout and Component Styles */
+        body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-body); color: var(--text-body); overflow-x: hidden; width: 100%; }
         
         .main-content { max-width: 2000px; margin: 0 auto; padding: 30px 40px; }
         
         .top-section { display: flex; gap: 30px; margin-bottom: 40px; }
-        .hero-banner { flex-grow: 1; height: 220px; background-color: #e9ecef; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow: hidden; }
+        .hero-banner { flex-grow: 1; height: 220px; background-color: var(--bg-body); border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow: hidden; }
         .hero-banner img { width: 100%; height: 100%; object-fit: cover; }
         
-        .greeting-box { flex-shrink: 0; width: 330px; height: 220px; background-color: white; border-radius: 12px; border: 1px solid #e0e4e8; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        .greeting-box .user-name { font-size: 1.4rem; font-weight: 700; color: #333; margin-bottom: 15px; }
-        .greeting-box .greeting-message { font-size: 1rem; font-weight: 500; color: #555; line-height: 1.6; }
+        .greeting-box { flex-shrink: 0; width: 330px; height: 220px; background-color: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .greeting-box .user-name { font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-bottom: 15px; }
+        .greeting-box .greeting-message { font-size: 1rem; font-weight: 500; color: var(--text-body); line-height: 1.6; }
         
-        .button-scroll-container { display: flex; overflow-x: auto; gap: 20px; padding: 10px 5px 30px 5px; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: #adb5bd #f8f9fa; }
+        .button-scroll-container { display: flex; overflow-x: auto; gap: 20px; padding: 10px 5px 30px 5px; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: #adb5bd var(--bg-body); }
         .button-scroll-container::-webkit-scrollbar { height: 8px; }
         .button-scroll-container::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 4px; }
         
-        .portal-btn { flex: 0 0 auto; width: 220px; height: 160px; background-color: #E3F2FD; border: 1px solid #BBDEFB; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.0rem; font-weight: 700; color: #0D47A1; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; text-align: center; padding: 15px; box-sizing: border-box; word-break: keep-all; }
-        .icon-circle { background-color: #29B6F6; color: white; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; transition: all 0.2s ease-in-out; }
+        .portal-btn { flex: 0 0 auto; width: 220px; height: 160px; background-color: var(--portal-btn-bg); border: 1px solid var(--portal-btn-border); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.0rem; font-weight: 700; color: var(--portal-btn-color); text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; text-align: center; padding: 15px; box-sizing: border-box; word-break: keep-all; }
+        .icon-circle { background-color: var(--portal-btn-icon-bg); color: var(--portal-btn-icon-color); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; transition: all 0.2s ease-in-out; }
         .icon-circle i { font-size: 1.4rem; }
-        .portal-btn:hover { background-color: #1428A0; color: white; transform: translateY(-8px); box-shadow: 0 10px 20px rgba(20, 40, 160, 0.2); border-color: #1428A0; }
-        .portal-btn:hover .icon-circle { background-color: white; color: #1428A0; }
+        .portal-btn:hover { background-color: var(--portal-btn-hover-bg); color: var(--portal-btn-hover-color); transform: translateY(-8px); box-shadow: 0 10px 20px rgba(20, 40, 160, 0.2); border-color: var(--portal-btn-hover-bg); }
+        .portal-btn:hover .icon-circle { background-color: var(--portal-btn-hover-color); color: var(--portal-btn-hover-bg); }
         .portal-btn.tbd { background-color: #f1f3f5; color: #868e96; border: 1px dashed #ced4da; }
         .portal-btn.tbd .icon-circle { background-color: #ced4da; color: white; }
         
+        body.dark-theme .portal-btn.tbd { background-color: #0F172A; color: #94A3B8; border: 1px dashed #475569; }
+        body.dark-theme .portal-btn.tbd .icon-circle { background-color: #475569; color: #94A3B8; }
+
         .news-section { margin-top: 40px; margin-bottom: 40px; }
         
-        .news-wrapper { background: white; border-radius: 12px; padding: 20px 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e0e4e8; display: flex; flex-direction: column; height: 420px; }
-        .news-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1428A0; padding-bottom: 10px; margin-bottom: 15px; }
-        .news-title { font-weight: 700; font-size: 1.1rem; color: #333; margin: 0; }
+        .news-wrapper { background: var(--bg-card); border-radius: 12px; padding: 20px 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); display: flex; flex-direction: column; height: 420px; }
+        .news-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--portal-btn-hover-bg); padding-bottom: 10px; margin-bottom: 15px; }
+        .news-title { font-weight: 700; font-size: 1.1rem; color: var(--text-main); margin: 0; }
         .news-body { flex: 1; overflow-y: auto; padding-right: 5px; }
         .news-body::-webkit-scrollbar { width: 6px; }
         .news-body::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
         
         .news-list { list-style: none; padding: 0; margin: 0; }
-        .news-item { border-bottom: 1px solid #f0f0f0; padding: 12px 0; }
+        .news-item { border-bottom: 1px solid var(--border-color); padding: 12px 0; }
         .news-item:last-child { border-bottom: none; }
         .news-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .news-item-supplier { font-size: 0.75rem; font-weight: 700; color: #1428A0; background-color: #E3F2FD; padding: 2px 6px; border-radius: 4px; }
-        .news-item-date { font-size: 0.75rem; color: #888; font-family: monospace; }
-        .news-item-link { font-size: 0.95rem; color: #333; text-decoration: none; line-height: 1.4; word-break: keep-all; font-weight: 500; display: block; }
-        .news-item-link:hover { color: #1428A0; text-decoration: underline; }
+        .news-item-supplier { font-size: 0.75rem; font-weight: 700; color: var(--portal-btn-hover-bg); background-color: var(--portal-btn-bg); padding: 2px 6px; border-radius: 4px; }
+        .news-item-date { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
+        .news-item-link { font-size: 0.95rem; color: var(--text-main); text-decoration: none; line-height: 1.4; word-break: keep-all; font-weight: 500; display: block; }
+        .news-item-link:hover { color: var(--portal-btn-hover-bg); text-decoration: underline; }
         
         .news-outer-footer { margin-top: 15px; padding: 0 5px; display: flex; justify-content: space-between; align-items: center; }
-        .news-update-info { font-size: 0.8rem; color: #888; font-weight: 500; }
+        .news-update-info { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
         .exchange-wrapper { display: flex; flex-direction: column; gap: 15px; }
-        .exchange-table-title { font-size: 0.9rem; font-weight: 700; color: #333; margin-bottom: 5px; text-align: left; padding-left: 2px; }
+        .exchange-table-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 5px; text-align: left; padding-left: 2px; }
         .exchange-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; text-align: center; table-layout: fixed; }
-        .exchange-table th { background-color: #E3F2FD; color: #1428A0; font-weight: 700; padding: 5px 2px; border: 1px solid #BBDEFB; }
-        .exchange-table td { padding: 5px 2px; border: 1px solid #e0e4e8; vertical-align: middle; color: #333; font-weight: 700; }
-        .exchange-table tbody tr:hover { background-color: #f8f9fa; }
+        .exchange-table th { background-color: var(--table-th-bg); color: var(--table-th-color); font-weight: 700; padding: 5px 2px; border: 1px solid var(--portal-btn-border); }
+        .exchange-table td { padding: 5px 2px; border: 1px solid var(--table-border); vertical-align: middle; color: var(--text-body); font-weight: 700; }
+        .exchange-table tbody tr:hover { background-color: var(--table-hover-bg); }
         .link-wrapper { display: flex; flex-direction: column; gap: 8px; }
-        .work-link-btn {display: flex; align-items: center; justify-content: center; width: 100%; padding: 4px 5px; font-size: 0.85rem; font-weight: 700; color: #0D47A1; background-color: #E3F2FD; border: 1px solid #BBDEFB; border-radius: 8px; text-decoration: none; transition: all 0.2s ease-in-out; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;}
-        .work-link-btn:hover { background-color: #1428A0; color: white; border-color: #1428A0; }
-        .category-pill:hover { background-color: #e9ecef !important; text-decoration: none !important; }
+        .work-link-btn {display: flex; align-items: center; justify-content: center; width: 100%; padding: 4px 5px; font-size: 0.85rem; font-weight: 700; color: var(--work-link-color); background-color: var(--work-link-bg); border: 1px solid var(--work-link-border); border-radius: 8px; text-decoration: none; transition: all 0.2s ease-in-out; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;}
+        .work-link-btn:hover { background-color: var(--work-link-hover-bg); color: var(--work-link-hover-color); border-color: var(--work-link-hover-bg); }
+        .category-pill:hover { background-color: var(--table-hover-bg) !important; text-decoration: none !important; }
         
+        .badge.rounded-pill {
+            background-color: var(--badge-bg) !important;
+            color: var(--badge-color) !important;
+            border-radius: var(--badge-radius) !important;
+        }
     </style>
+    <script>
+        // Immediately apply theme state on load to avoid flashing light background
+        (function() {
+            const savedTheme = localStorage.getItem('srm-theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark-theme');
+                document.write('<style>html.dark-theme, body.dark-theme { background-color: rgb(15,18,22) !important; color: rgb(255,255,255) !important; }</style>');
+            }
+        })();
+    </script>
 </head>
 <body>
     <?!= include('header'); ?>
     <main class="main-content">
         <section class="top-section">
-            <div class="hero-banner"><?!= include(randomImageFile) ?></div>
+            <div class="hero-banner">
+                <div id="hero-image-light" style="width: 100%; height: 100%; display: block;">
+                    <?!= include('image_data2') ?>
+                </div>
+                <div id="hero-image-dark" style="width: 100%; height: 100%; display: none;">
+                    <?!= include('image_data1') ?>
+                </div>
+            </div>
             <div class="greeting-box">
                 <div id="user-name-display" class="user-name">로딩중...</div>
                 <div id="greeting-message-display" class="greeting-message mb-2"><?= randomGreeting ?></div>
@@ -167,7 +382,7 @@
                         <div class="news-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                             <h3 class="news-title" style="margin-bottom: 2px; display: inline-flex; align-items: center; gap: 8px;">
                                 <span>국내 협력사 뉴스 모니터링</span>
-                                <span class="badge rounded-pill" id="domestic-news-count" style="font-size: 0.8rem; background-color: #1428A0 !important; color: white; padding: 3px 6px; line-height: 1;">0</span>
+                                <span class="badge rounded-pill" id="domestic-news-count" style="font-size: 0.8rem; padding: 3px 6px; line-height: 1;">0</span>
                             </h3>
                             <div class="news-category-summary text-muted" id="domestic-news-summary" style="font-size: 0.8rem; font-weight: normal; word-break: keep-all;">
                                 실적(0건), 주가(0건), Risk(0건), 기술(0건), SCM(0건), ESG(0건), 기타(0건)
@@ -182,7 +397,7 @@
                         <div class="news-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                             <h3 class="news-title" style="margin-bottom: 2px; display: inline-flex; align-items: center; gap: 8px;">
                                 <span>해외 협력사 뉴스 모니터링</span>
-                                <span class="badge rounded-pill" id="overseas-news-count" style="font-size: 0.8rem; background-color: #1428A0 !important; color: white; padding: 3px 6px; line-height: 1;">0</span>
+                                <span class="badge rounded-pill" id="overseas-news-count" style="font-size: 0.8rem; padding: 3px 6px; line-height: 1;">0</span>
                             </h3>
                             <div class="news-category-summary text-muted" id="overseas-news-summary" style="font-size: 0.8rem; font-weight: normal; word-break: keep-all;">
                                 실적(0건), 주가(0건), Risk(0건), 기술(0건), SCM(0건), ESG(0건), 기타(0건)
@@ -295,6 +510,41 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Theme switcher logic
+        function applyTheme(theme) {
+            const body = document.body;
+            const toggleBtn = document.getElementById('theme-toggle-btn');
+            const lightImg = document.getElementById('hero-image-light');
+            const darkImg = document.getElementById('hero-image-dark');
+            
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+                document.documentElement.classList.add('dark-theme');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = '테마설정: Light';
+                }
+                if (lightImg) lightImg.style.display = 'none';
+                if (darkImg) darkImg.style.display = 'block';
+                localStorage.setItem('srm-theme', 'dark');
+            } else {
+                body.classList.remove('dark-theme');
+                document.documentElement.classList.remove('dark-theme');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = '테마설정: Dark';
+                }
+                if (lightImg) lightImg.style.display = 'block';
+                if (darkImg) darkImg.style.display = 'none';
+                localStorage.setItem('srm-theme', 'light');
+            }
+        }
+        window.applyTheme = applyTheme;
+        
+        window.toggleTheme = function() {
+            const currentTheme = localStorage.getItem('srm-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        };
+
         const serverArchivedData = <?!= archivedNews ?>;
 
         // Global state for news filtering and caching
@@ -309,9 +559,13 @@
 
         // Client-side user greeting helper (resolves undefined deptHtml error and adds robust fallbacks)
         function applyUserGreeting(userInfo) {
-            const displayName = (userInfo && userInfo.name) ? userInfo.name : '조도희';
-            const displayDept = (userInfo && userInfo.dept) ? userInfo.dept : '구매그룹';
-            const deptHtml = `<span style="font-size: 1rem; font-weight: 500; color: #555; margin-right: 8px;">${displayDept}</span>`;
+            const displayName = (userInfo && userInfo.name) ? userInfo.name : 'User';
+            const displayDept = (userInfo && userInfo.dept !== undefined) ? userInfo.dept : '삼성메디슨';
+            
+            let deptHtml = '';
+            if (displayDept) {
+                deptHtml = `<span style="font-size: 1rem; font-weight: 500; color: #555; margin-right: 8px;">${displayDept}</span>`;
+            }
             
             const nameDisplay = document.getElementById('user-name-display');
             if (nameDisplay) {
@@ -413,6 +667,9 @@
         }
         
         document.addEventListener('DOMContentLoaded', function() {
+            // Apply theme on load
+            applyTheme(localStorage.getItem('srm-theme') || 'light');
+
             if (!window.isAccessLogged) {
                 window.isAccessLogged = true;
                 setTimeout(() => {
@@ -431,7 +688,7 @@
                     google.script.run
                       .withSuccessHandler(function(fetchedMenuGroups) {
                           if (typeof renderHeaderUI === 'function') {
-                              renderHeaderUI(userInfo.email, "메-SRM", fetchedMenuGroups);
+                              renderHeaderUI(userInfo, "메-SRM", fetchedMenuGroups);
                           }
                           if (!fetchedMenuGroups || fetchedMenuGroups.length === 0) {
                               buttonContainer.innerHTML = '<div class="text-muted p-3">메뉴 데이터가 없습니다. 바로가기 시트를 확인해주세요.</div>';
@@ -472,7 +729,7 @@
                           console.error("메뉴 버튼 동적 생성 에러:", error);
                           buttonContainer.innerHTML = '<div class="text-danger p-3">메뉴를 불러오는데 실패했습니다.</div>';
                           if (typeof renderHeaderUI === 'function') {
-                              renderHeaderUI(userInfo.email, "메-SRM", []);
+                             renderHeaderUI(userInfo, "메-SRM", []);
                           }
                       })
                       .getMenuLinks();
@@ -532,6 +789,7 @@
                 return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
             }
 
+            // News classification and parsing functions unchanged
             function renderNews(containerId, newsArray, isReRender = false) {
                 if (!isReRender) {
                     window.newsDataCache[containerId] = newsArray || [];
@@ -697,10 +955,10 @@
                         
                         if (isTopTable) {
                             if (text.includes('▲') || text.includes('△') || text.startsWith('+')) {
-                                colorStyle = 'color: #DC3545;';
+                                colorStyle = 'color: var(--up-color);';
                             } 
                             else if (text.includes('▼') || text.includes('▽') || text.startsWith('-')) {
-                                colorStyle = 'color: #0D6EFD;';
+                                colorStyle = 'color: var(--down-color);';
                             }
                         }
                         
