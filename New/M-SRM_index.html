@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메-SRM</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #0b0d12;
+    --bg-panel: #161a23;
+    --bg-panel-alt: #1d222c;
+    --border-subtle: #2a2f3a;
+    --accent: #F4C430;
+    --accent-strong: #FFD966;
+    --accent-dim: rgba(244, 196, 48, 0.14);
+    --text-primary: #ECEEF1;
+    --text-secondary: #9AA1AC;
+    --text-muted: #6B7280;
+    --danger: #FF6B6B;
+    --up: #FF6B6B;
+    --down: #5B9DFF;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  .main-content { max-width: 2000px; margin: 0 auto; padding: 30px 40px; }
+
+  .top-section { display: flex; gap: 30px; margin-bottom: 40px; flex-wrap: wrap; }
+
+  .hero-banner {
+    flex-grow: 1; min-width: 260px; height: 220px;
+    background-color: var(--bg-panel); border: 1px solid var(--border-subtle);
+    border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.4); overflow: hidden;
+  }
+  .hero-banner img { width: 100%; height: 100%; object-fit: cover; }
+
+  .greeting-box {
+    flex-shrink: 0; width: 330px; height: 220px;
+    background-color: var(--bg-panel); border-radius: 12px;
+    border: 1px solid var(--border-subtle); box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; text-align: center;
+  }
+  .greeting-box .user-name { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin-bottom: 15px; }
+  .greeting-box .greeting-message { font-size: 1rem; font-weight: 500; color: var(--text-secondary); line-height: 1.6; }
+  .greeting-box .btn-link { color: var(--text-secondary) !important; }
+  .greeting-box .btn-link:hover { color: var(--accent-strong) !important; }
+
+  .button-scroll-container {
+    display: flex; overflow-x: auto; gap: 20px; padding: 10px 5px 30px 5px;
+    scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--border-subtle) transparent;
+  }
+  .button-scroll-container::-webkit-scrollbar { height: 8px; }
+  .button-scroll-container::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+
+  .portal-btn {
+    flex: 0 0 auto; width: 220px; height: 160px;
+    background-color: var(--bg-panel); border: 1px solid var(--border-subtle);
+    border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 1.0rem; font-weight: 700; color: var(--text-primary); text-decoration: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35); transition: all 0.2s ease-in-out;
+    text-align: center; padding: 15px; box-sizing: border-box; word-break: keep-all;
+  }
+  .icon-circle {
+    background-color: var(--accent-dim); color: var(--accent); width: 48px; height: 48px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px; transition: all 0.2s ease-in-out;
+  }
+  .icon-circle i { font-size: 1.4rem; }
+  .portal-btn:hover {
+    background-color: var(--accent-dim); color: var(--accent-strong);
+    transform: translateY(-8px); box-shadow: 0 10px 24px rgba(244, 196, 48, 0.18);
+    border-color: var(--accent);
+  }
+  .portal-btn:hover .icon-circle { background-color: var(--accent); color: #14161c; }
+  .portal-btn.tbd { background-color: #12141a; color: var(--text-muted); border: 1px dashed var(--border-subtle); }
+  .portal-btn.tbd .icon-circle { background-color: var(--border-subtle); color: var(--text-muted); }
+  .portal-btn.tbd:hover { transform: none; box-shadow: 0 4px 10px rgba(0,0,0,0.35); border-color: var(--border-subtle); background-color: #12141a; color: var(--text-muted); }
+  .portal-btn.tbd:hover .icon-circle { background-color: var(--border-subtle); color: var(--text-muted); }
+
+  .news-section { margin-top: 40px; margin-bottom: 40px; }
+  .news-wrapper {
+    background: var(--bg-panel); border-radius: 12px; padding: 20px 25px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4); border: 1px solid var(--border-subtle);
+    display: flex; flex-direction: column; height: 420px;
+  }
+  .news-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 15px; }
+  .news-title { font-weight: 700; font-size: 1.1rem; color: var(--text-primary); margin: 0; }
+  .news-body { flex: 1; overflow-y: auto; padding-right: 5px; }
+  .news-body::-webkit-scrollbar { width: 6px; }
+  .news-body::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+  .news-list { list-style: none; padding: 0; margin: 0; }
+  .news-item { border-bottom: 1px solid var(--border-subtle); padding: 12px 0; }
+  .news-item:last-child { border-bottom: none; }
+  .news-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .news-item-supplier { font-size: 0.75rem; font-weight: 700; color: var(--accent-strong); background-color: var(--accent-dim); padding: 2px 6px; border-radius: 4px; }
+  .news-item-date { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
+  .news-item-link { font-size: 0.95rem; color: var(--text-primary); text-decoration: none; line-height: 1.4; word-break: keep-all; font-weight: 500; display: block; }
+  .news-item-link:hover { color: var(--accent-strong); text-decoration: underline; }
+  .news-outer-footer { margin-top: 15px; padding: 0 5px; display: flex; justify-content: space-between; align-items: center; }
+  .news-update-info { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+
+  .btn-outline-primary { color: var(--accent); border-color: var(--accent); }
+  .btn-outline-primary:hover { background-color: var(--accent); border-color: var(--accent); color: #14161c; }
+
+  .exchange-wrapper { display: flex; flex-direction: column; gap: 15px; }
+  .exchange-table-title { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; text-align: left; padding-left: 2px; }
+  .exchange-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; text-align: center; table-layout: fixed; }
+  .exchange-table th { background-color: var(--accent-dim); color: var(--accent-strong); font-weight: 700; padding: 5px 2px; border: 1px solid var(--border-subtle); }
+  .exchange-table td { padding: 5px 2px; border: 1px solid var(--border-subtle); vertical-align: middle; color: var(--text-primary); font-weight: 700; }
+  .exchange-table tbody tr:hover { background-color: var(--bg-panel-alt); }
+
+  .link-wrapper { display: flex; flex-direction: column; gap: 8px; }
+  .work-link-btn {
+    display: flex; align-items: center; justify-content: center; width: 100%; padding: 4px 5px;
+    font-size: 0.85rem; font-weight: 700; color: var(--accent-strong); background-color: var(--accent-dim);
+    border: 1px solid var(--border-subtle); border-radius: 8px; text-decoration: none;
+    transition: all 0.2s ease-in-out; text-align: center; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; cursor: pointer;
+  }
+  .work-link-btn:hover { background-color: var(--accent); color: #14161c; border-color: var(--accent); }
+
+  .category-pill:hover { background-color: var(--bg-panel-alt) !important; text-decoration: none !important; }
+
+  .modal-content { background-color: var(--bg-panel); color: var(--text-primary); }
+  .modal-header { background-color: var(--bg-panel-alt) !important; border-bottom: 1px solid var(--border-subtle); }
+  .list-group-item { background-color: var(--bg-panel); color: var(--text-primary); border-color: var(--border-subtle); }
+  .list-group-item:hover { background-color: var(--bg-panel-alt); }
+  .modal-footer { background-color: var(--bg-panel-alt) !important; border-top: 1px solid var(--border-subtle); }
+
+  ::placeholder { color: var(--text-muted); }
+</style>
+</head>
+<body>
+<?!= include('header'); ?>
+
+<main class="main-content">
+  <section class="top-section">
+    <div class="hero-banner"><?!= include(randomImageFile) ?></div>
+    <div class="greeting-box">
+      <div id="user-name-display" class="user-name">로딩중...</div>
+      <div id="greeting-message-display" class="greeting-message mb-2"><?= randomGreeting ?></div>
+      <button class="btn btn-link text-secondary p-0" onclick="refreshGreeting()" id="greeting-refresh-btn" style="font-size: 0.85rem; text-decoration: none;" title="덕담 바꾸기">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
+  </section>
+
+  <div class="button-scroll-container" id="button-container"></div>
+
+  <section class="news-section">
+    <div class="row g-4">
+      <div class="col-lg-4 col-md-6">
+        <div class="news-wrapper">
+          <div class="news-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+            <h3 class="news-title" style="margin-bottom: 2px; display: inline-flex; align-items: center; gap: 8px;">
+              <span>국내 협력사 뉴스 모니터링</span>
+              <span class="badge rounded-pill" id="domestic-news-count" style="font-size: 0.8rem; background-color: #F4C430 !important; color: #14161c; padding: 3px 6px; line-height: 1;">0</span>
+            </h3>
+            <div class="news-category-summary" id="domestic-news-summary" style="font-size: 0.8rem; font-weight: normal; word-break: keep-all; color: #9AA1AC;">
+              실적(0건), 주가(0건), Risk(0건), 기술(0건), SCM(0건), ESG(0건), 기타(0건)
+            </div>
+          </div>
+          <div class="news-body" id="domestic-news-container"></div>
+        </div>
+      </div>
+
+      <div class="col-lg-4 col-md-6">
+        <div class="news-wrapper">
+          <div class="news-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+            <h3 class="news-title" style="margin-bottom: 2px; display: inline-flex; align-items: center; gap: 8px;">
+              <span>해외 협력사 뉴스 모니터링</span>
+              <span class="badge rounded-pill" id="overseas-news-count" style="font-size: 0.8rem; background-color: #F4C430 !important; color: #14161c; padding: 3px 6px; line-height: 1;">0</span>
+            </h3>
+            <div class="news-category-summary" id="overseas-news-summary" style="font-size: 0.8rem; font-weight: normal; word-break: keep-all; color: #9AA1AC;">
+              실적(0건), 주가(0건), Risk(0건), 기술(0건), SCM(0건), ESG(0건), 기타(0건)
+            </div>
+          </div>
+          <div class="news-body" id="overseas-news-container"></div>
+        </div>
+      </div>
+
+      <div class="col-lg-4 col-md-12">
+        <div class="row g-3" style="height: 100%;">
+          <div class="col-9" style="display: flex; flex-direction: column;">
+            <div class="news-wrapper" style="flex-grow: 1;">
+              <div class="news-header"><h3 class="news-title">환율 정보</h3></div>
+              <div class="news-body" id="exchange-rate-container" style="padding-right: 0;">
+                <div class="text-center" style="padding: 40px 20px; color:#9AA1AC;">
+                  <div class="spinner-border spinner-border-sm mb-2" style="color:#F4C430;" role="status"></div>
+                  <br>환율 데이터를 불러오는 중...
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-3" style="display: flex; flex-direction: column;">
+            <div class="news-wrapper" style="padding: 20px 15px; flex-grow: 1;">
+              <div class="news-header"><h3 class="news-title">업무 사이트</h3></div>
+              <div class="news-body" style="padding-right: 0; display: flex; flex-direction: column; justify-content: start;">
+                <div class="link-wrapper">
+                  <a href="https://www.samsung.net/" target="_blank" class="work-link-btn">Knox Portal</a>
+                  <a href="https://nerps.sec.samsung.net/" target="_blank" class="work-link-btn">N-ERP</a>
+                  <a href="http://10.50.10.66:8001/hrpartnerMainInit.do" target="_blank" class="work-link-btn">HR Partner</a>
+                  <a href="http://10.50.10.43:8080/portal/main/main.do" target="_blank" class="work-link-btn">업무지원포털</a>
+                  <a href="javascript:void(0)" class="work-link-btn" data-bs-toggle="modal" data-bs-target="#rulesModal">구매업무규칙</a>
+                  <a href="https://mosaic.sec.samsung.net/collaboration/workspace/282794/" target="_blank" class="work-link-btn">의기2合</a>
+                  <a href="https://vertexaisearch.cloud.google.com/u/1/home/cid/cff7b324-a4a5-4a4c-ae32-c470f10f806f" target="_blank" class="work-link-btn">Gemini</a>
+                  <a href="http://splm.sec.samsung.net/" target="_blank" class="work-link-btn">PLM</a>
+                  <a href="https://www.koreapds.com/spage/samsung/ss_auth_won.php/" target="_blank" class="work-link-btn">Korea PDS</a>
+                  <a href="https://dart.fss.or.kr/" target="_blank" class="work-link-btn">DART</a>
+                  <a href="https://www.dramexchange.com/" target="_blank" class="work-link-btn">DRAM Exchange</a>
+                  <a href="https://cpc.sec.samsung.net/" target="_blank" class="work-link-btn">CPCex</a>
+                  <a href="https://medison.kacnet.co.kr/" target="_blank" class="work-link-btn">독서통신교육</a>
+                  <a href="https://www.law.go.kr/lsInfoP.do?lsiSeq=203238&efYd=20181018#0000" target="_blank" class="work-link-btn">하도급법</a>
+                  <a href="http://10.50.10.45:8080/login.do" target="_blank" class="work-link-btn">법무시스템</a>
+                  <a href="https://mdscm.sec.samsung.net/" target="_blank" class="work-link-btn">GSCM</a>
+                  <a href="https://cis.sec.samsung.net/" target="_blank" class="work-link-btn">CIS</a>
+                  <a href="https://it4u.sec.samsung.net/" target="_blank" class="work-link-btn">IT4U</a>
+                  <a href="https://meeting.samsung.net/" target="_blank" class="work-link-btn">Knox Meeting</a>
+                  <a href="https://nsrm.sec.samsung.net/" target="_blank" class="work-link-btn">N-SRM</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-outer-footer">
+      <span class="news-update-info" id="last-update-time">최근 업데이트 일자 : -</span>
+      <button class="btn btn-outline-primary btn-sm" onclick="refreshAll(true)" id="news-update-btn">
+        <i class="bi bi-arrow-clockwise"></i> 새로고침
+      </button>
+    </div>
+  </section>
+</main>
+
+<div class="modal fade" id="rulesModal" tabindex="-1" aria-labelledby="rulesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-subtle);">
+        <h5 class="modal-title fw-bold" id="rulesModalLabel" style="color: var(--accent-strong);">
+          <i class="bi bi-journal-text me-2"></i>업무규칙 다운로드
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="list-group list-group-flush">
+          <a href="https://storage.cloud.google.com/mdsn-prd-agsp-bucket-01/%5BUS%5D%20%EC%A7%80%EC%9B%90%ED%8C%80/%EA%B5%AC%EB%A7%A4%EA%B7%B8%EB%A3%B9/%EA%B5%AC%EB%A7%A4%20%EC%97%85%EB%AC%B4%EA%B7%9C%EC%B9%99/%ED%98%91%EB%A0%A5%EC%97%85%EC%B2%B4%20%EA%B4%80%EB%A6%AC%EA%B7%9C%EC%B9%99%20DXQ3-0004K%20Ver14_F.docx" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+            <span><i class="bi bi-file-earmark-word me-2" style="color: var(--accent);"></i>협력업체 관리규칙</span>
+            <span class="badge rounded-pill" style="background-color: var(--accent); color:#14161c;"><i class="bi bi-download"></i></span>
+          </a>
+          <a href="https://storage.cloud.google.com/mdsn-prd-agsp-bucket-01/%5BUS%5D%20%EC%A7%80%EC%9B%90%ED%8C%80/%EA%B5%AC%EB%A7%A4%EA%B7%B8%EB%A3%B9/%EA%B5%AC%EB%A7%A4%20%EC%97%85%EB%AC%B4%EA%B7%9C%EC%B9%99/%EC%A1%B0%EB%8B%AC%EA%B5%AC%EB%A7%A4%2B%EC%97%85%EB%AC%B4%EA%B7%9C%EC%B9%99_DXQ3-0012K_Ver01_210616.docx" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+            <span><i class="bi bi-file-earmark-word me-2" style="color: var(--accent);"></i>조달구매 업무규칙</span>
+            <span class="badge rounded-pill" style="background-color: var(--accent); color:#14161c;"><i class="bi bi-download"></i></span>
+          </a>
+          <a href="https://storage.cloud.google.com/mdsn-prd-agsp-bucket-01/%5BUS%5D%20%EC%A7%80%EC%9B%90%ED%8C%80/%EA%B5%AC%EB%A7%A4%EA%B7%B8%EB%A3%B9/%EA%B5%AC%EB%A7%A4%20%EC%97%85%EB%AC%B4%EA%B7%9C%EC%B9%99/%EA%B5%AC%EB%A7%A4%EA%B4%80%EB%A6%AC%EA%B7%9C%EC%B9%99_DXQ3-0007K_Ver17_231106.docx" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+            <span><i class="bi bi-file-earmark-word me-2" style="color: var(--accent);"></i>구매 관리규칙</span>
+            <span class="badge rounded-pill" style="background-color: var(--accent); color:#14161c;"><i class="bi bi-download"></i></span>
+          </a>
+          <a href="https://storage.cloud.google.com/mdsn-prd-agsp-bucket-01/%5BUS%5D%20%EC%A7%80%EC%9B%90%ED%8C%80/%EA%B5%AC%EB%A7%A4%EA%B7%B8%EB%A3%B9/%EA%B5%AC%EB%A7%A4%20%EC%97%85%EB%AC%B4%EA%B7%9C%EC%B9%99/%EC%82%BC%EC%84%B1%EB%A9%94%EB%94%94%EC%8A%A8_%EA%B8%88%ED%98%95%EA%B4%80%EB%A6%AC%EC%97%85%EB%AC%B4%EA%B7%9C%EC%B9%99_Ver.20.docx" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+            <span><i class="bi bi-file-earmark-word me-2" style="color: var(--accent);"></i>금형관리 업무규칙</span>
+            <span class="badge rounded-pill" style="background-color: var(--accent); color:#14161c;"><i class="bi bi-download"></i></span>
+          </a>
+          <a href="https://storage.cloud.google.com/mdsn-prd-agsp-bucket-01/%5BUS%5D%20%EC%A7%80%EC%9B%90%ED%8C%80/%EA%B5%AC%EB%A7%A4%EA%B7%B8%EB%A3%B9/%EA%B5%AC%EB%A7%A4%20%EC%97%85%EB%AC%B4%EA%B7%9C%EC%B9%99/%EC%9B%90%EA%B0%80%EC%A0%88%EA%B0%90%20%EA%B4%80%EB%A6%AC%EA%B8%B0%EC%A4%80_DXQ3-0010K_Ver02_231106.docx" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+            <span><i class="bi bi-file-earmark-word me-2" style="color: var(--accent);"></i>원가절감 관리기준</span>
+            <span class="badge rounded-pill" style="background-color: var(--accent); color:#14161c;"><i class="bi bi-download"></i></span>
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer p-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const serverArchivedData = <?!= archivedNews ?>;
+
+  // 뉴스 필터/캐시 전역 상태
+  window.activeFilters = { 'domestic-news-container': null, 'overseas-news-container': null };
+  window.newsDataCache = { 'domestic-news-container': [], 'overseas-news-container': [] };
+
+  function applyUserGreeting(userInfo) {
+    const displayName = (userInfo && userInfo.name) ? userInfo.name : '사용자';
+    const displayDept = (userInfo && userInfo.dept) ? userInfo.dept : '구매그룹';
+    const deptHtml = `<span style="font-size: 1rem; font-weight: 500; color: #9AA1AC; margin-right: 8px;">${displayDept}</span>`;
+    const nameDisplay = document.getElementById('user-name-display');
+    if (nameDisplay) {
+      nameDisplay.innerHTML = deptHtml + displayName + '<span style="font-size:1rem;"> 님</span>';
+    }
+  }
+
+  function classifyNewsItem(item) {
+    const title = (item.title || '').toLowerCase();
+    let categories = [];
+    const hasPerformance = /실적|매출|영업이익|흑자|적자|이익|성장|분기|성적|어닝|수익|가이던스|서프라이즈|쇼크|턴어라운드|사상 최대|성과|earnings|revenue|profit|sales|growth|quarterly|margin|deficit|guidance|surprise|shock|outlook|surplus/.test(title);
+    const hasStock = /주가|주식|증시|코스피|코스닥|상장|상한가|하한가|지분|인수|합병|m&a|투자|공모|유상증자|무상증자|공시|사채|펀딩|stock|share|nasdaq|ipo|acquisition|merger|equity|investment|invest|dividend/.test(title);
+    const hasRisk = /리스크|위기|소송|분쟁|지연|과징금|조사|검찰|위반|단독|논란|악재|피소|재판|갈등|파업|재해|리콜|불량|규제|제재|워크아웃|회생|압수수색|유출|중단|risk|lawsuit|sue|dispute|delay|fine|penalty|investigation|violation|controversy|scandal|strike|disaster|recall|defect|regulation|sanction/.test(title);
+    const hasTech = /기술|개발|연구|r&d|출시|개발\s*성공|신제품|플랫폼|솔루션|독점|상용화|양산|특허|인공지능|소프트웨어|하드웨어|국산화|표준|내재화|양산|development|launch|develop|solution|prototype|patent|software|hardware|chip|semiconductor|innovat/.test(title);
+    const hasScm = /공장|증설|가동|중단|폐쇄|생산|라인|캐파|공급망|수급|재고|납기|계약|원자재|수출|수입|부품|조달|물류|협력사|발주|물량|화물|수송|리쇼어랑|다변화|이원화|셧다운|factory|plant|production|capacity|supply|shut\s*down|delivery|shortage|logistics|procurement|material|component|inventory|export|import|shipping|freight|carrier/.test(title);
+    const hasGov = /esg|친환경|탄소|온실가스|신재생|re100|안전|노동|준수|제재|법안|기후|에너지|리사이클|재활용|상생|인권|안전보건|기부|사회공헌|승계|감축|green|carbon|compliance|emission|environmental|regulation|climate|energy|eco-friendly|recycle|renewable|safety|labor|human\s*rights|social|대표|임원|인사|선임|사임|교체|구속|횡령|배임|지배구조|대주주|이사|주주|이사회|사외이사|회장|사장|선출|주주총회|ceo|appointment|executive|governance|embezzlement|board|director|shareholder|cfo|chairman/.test(title);
+    if (hasPerformance) categories.push('performance');
+    if (hasStock) categories.push('stock');
+    if (hasRisk) categories.push('risk');
+    if (hasTech) categories.push('tech');
+    if (hasScm) categories.push('scm');
+    if (hasGov) categories.push('gov');
+    if (categories.length === 0) categories.push('other');
+    return categories;
+  }
+
+  function getCategoryLabel(cat) {
+    if (cat === 'performance') return '실적';
+    if (cat === 'stock') return '주가';
+    if (cat === 'risk') return 'Risk';
+    if (cat === 'tech') return '기술';
+    if (cat === 'scm') return 'SCM';
+    if (cat === 'gov') return 'ESG';
+    return '기타';
+  }
+
+  // 다크 테마용 카테고리 색상(밝은 톤으로 조정)
+  const CATEGORY_COLORS = {
+    performance: '#8AA4FF',
+    stock: '#5B9DFF',
+    risk: '#FF6B6B',
+    tech: '#C792EA',
+    scm: '#FFA05C',
+    gov: '#4ADE80',
+    other: '#9AA1AC'
+  };
+
+  window.toggleCategoryFilter = function (containerId, category) {
+    if (window.activeFilters[containerId] === category) {
+      window.activeFilters[containerId] = null;
+    } else {
+      window.activeFilters[containerId] = category;
+    }
+    renderNews(containerId, null, true);
+  };
+
+  function updateNewsSummary(containerId, newsArray) {
+    const summaryId = containerId === 'domestic-news-container' ? 'domestic-news-summary' : 'overseas-news-summary';
+    const activeFilter = window.activeFilters[containerId];
+    let counts = { performance: 0, stock: 0, risk: 0, tech: 0, scm: 0, gov: 0, other: 0 };
+
+    if (newsArray && newsArray.length > 0) {
+      newsArray.forEach(item => {
+        const categories = item.categories || classifyNewsItem(item);
+        categories.forEach(cat => { if (counts[cat] !== undefined) counts[cat]++; });
+      });
+    }
+
+    const summaryEl = document.getElementById(summaryId);
+    if (!summaryEl) return;
+
+    const getPillHtml = (cat, label, count) => {
+      const color = CATEGORY_COLORS[cat];
+      const isActive = activeFilter === cat;
+      const activeStyle = isActive
+        ? `background-color: ${color}26; border: 1px solid ${color}; font-weight: bold;`
+        : `border: 1px solid transparent;`;
+      return `<span onclick="toggleCategoryFilter('${containerId}', '${cat}')"
+        style="cursor: pointer; padding: 1px 5px; border-radius: 4px; display: inline-block; transition: all 0.15s; ${activeStyle}"
+        class="category-pill" title="${label} 필터 토글">
+        ${label}(<span style="color: ${color}; font-weight: bold;">${count}</span>건)
+      </span>`;
+    };
+
+    summaryEl.innerHTML = ['performance', 'stock', 'risk', 'tech', 'scm', 'gov', 'other']
+      .map(cat => getPillHtml(cat, getCategoryLabel(cat), counts[cat]))
+      .join(' ');
+  }
+
+  function formatNewsDate(dateStr) {
+    let d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    let pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  function renderNews(containerId, newsArray, isReRender = false) {
+    if (!isReRender) window.newsDataCache[containerId] = newsArray || [];
+
+    const container = document.getElementById(containerId);
+    const countId = containerId === 'domestic-news-container' ? 'domestic-news-count' : 'overseas-news-count';
+    const activeFilter = window.activeFilters[containerId];
+    const cachedArray = window.newsDataCache[containerId];
+
+    const countEl = document.getElementById(countId);
+    if (countEl) countEl.innerText = cachedArray ? cachedArray.length : 0;
+
+    if (!cachedArray || cachedArray.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding: 40px 20px; color:#6B7280;">최근 7일간 검색된 관련 뉴스가 없습니다.</div>';
+      updateNewsSummary(containerId, []);
+      return;
+    }
+
+    let displayedItems = [];
+    cachedArray.forEach(item => {
+      item.categories = classifyNewsItem(item);
+      if (!activeFilter || item.categories.includes(activeFilter)) displayedItems.push(item);
+    });
+
+    if (displayedItems.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding: 40px 20px; color:#6B7280;">선택한 카테고리에 해당하는 뉴스가 없습니다.</div>';
+    } else {
+      let html = '<ul class="news-list">';
+      displayedItems.forEach(item => {
+        let formattedDate = formatNewsDate(item.pubDate);
+        let dotsHtml = '';
+        item.categories.forEach(cat => {
+          if (cat !== 'other') {
+            const dotColor = CATEGORY_COLORS[cat];
+            dotsHtml += `<span style="color: ${dotColor}; margin-left: 3px; font-size: 0.45rem; line-height: 1; vertical-align: middle;" title="${getCategoryLabel(cat)}">●</span>`;
+          }
+        });
+        html += `
+          <li class="news-item">
+            <div class="news-item-top" style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: inline-flex; align-items: center;">
+                <span class="news-item-supplier">${item.supplier}</span>
+                <span style="display: inline-flex; gap: 1px; margin-left: 4px;">${dotsHtml}</span>
+              </div>
+              <span class="news-item-date">${formattedDate}</span>
+            </div>
+            <a href="${item.link}" target="_blank" class="news-item-link" style="margin-top: 4px;">${item.title}</a>
+          </li>`;
+      });
+      html += '</ul>';
+      container.innerHTML = html;
+    }
+
+    updateNewsSummary(containerId, cachedArray);
+  }
+  window.renderNews = renderNews;
+
+  function renderInitialArchivedNews() {
+    if (serverArchivedData && (serverArchivedData.domestic.length > 0 || serverArchivedData.overseas.length > 0)) {
+      renderNews('domestic-news-container', serverArchivedData.domestic);
+      renderNews('overseas-news-container', serverArchivedData.overseas);
+      if (serverArchivedData.lastUpdated) {
+        document.getElementById('last-update-time').innerText = `최근 업데이트 일자 : ${serverArchivedData.lastUpdated}`;
+      }
+      backgroundUpdateNews(true);
+    } else {
+      refreshNews(true);
+    }
+  }
+
+  function setNewsButtonBusy(isBusy) {
+    const btn = document.getElementById('news-update-btn');
+    if (!btn) return;
+    btn.disabled = isBusy;
+    btn.innerHTML = isBusy
+      ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 업데이트 중...'
+      : '<i class="bi bi-arrow-clockwise"></i> 새로고침';
+  }
+
+  function handleNewsResult(newsData) {
+    renderNews('domestic-news-container', newsData.domestic);
+    renderNews('overseas-news-container', newsData.overseas);
+    if (newsData.lastUpdated) {
+      document.getElementById('last-update-time').innerText = `최근 업데이트 일자 : ${newsData.lastUpdated}`;
+    }
+    setNewsButtonBusy(false);
+  }
+
+  function backgroundUpdateNews(forceUpdate = true) {
+    setNewsButtonBusy(true);
+    google.script.run
+      .withSuccessHandler(handleNewsResult)
+      .withFailureHandler(function (error) { console.error("뉴스 배경 업데이트 오류:", error); setNewsButtonBusy(false); })
+      .getSupplierNews(forceUpdate);
+  }
+
+  window.refreshNews = function (forceUpdate = false) {
+    setNewsButtonBusy(true);
+    google.script.run
+      .withSuccessHandler(handleNewsResult)
+      .withFailureHandler(function (error) { console.error("뉴스 수동 업데이트 오류:", error); setNewsButtonBusy(false); })
+      .getSupplierNews(forceUpdate);
+  };
+
+  function renderExchangeTable(data, isTopTable = false) {
+    if (!data || data.length === 0) return '';
+    let html = '<table class="exchange-table"><thead><tr>';
+    data[0].forEach(cell => { html += `<th>${cell}</th>`; });
+    html += '</tr></thead><tbody>';
+    for (let i = 1; i < data.length; i++) {
+      html += '<tr>';
+      data[i].forEach(cell => {
+        let text = cell.toString().trim();
+        let colorStyle = '';
+        if (isTopTable) {
+          if (text.includes('▲') || text.includes('△') || text.startsWith('+')) colorStyle = 'color: #FF6B6B;';
+          else if (text.includes('▼') || text.includes('▽') || text.startsWith('-')) colorStyle = 'color: #5B9DFF;';
+        }
+        html += `<td style="${colorStyle}">${text}</td>`;
+      });
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+
+  window.loadExchangeRates = function () {
+    const container = document.getElementById('exchange-rate-container');
+    container.innerHTML = `
+      <div class="text-center" style="padding: 40px 20px; color:#9AA1AC;">
+        <div class="spinner-border spinner-border-sm mb-2" style="color:#F4C430;" role="status"></div>
+        <br>환율 데이터를 불러오는 중...
+      </div>`;
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (!res.success) {
+          container.innerHTML = `<div style="padding: 20px; color:#FF6B6B; text-align:center;">${res.message}</div>`;
+          return;
+        }
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const dateString = `${yyyy}-${mm}-${dd}`;
+        let html = '<div class="exchange-wrapper">';
+        html += `<div><div class="exchange-table-title">오늘의 환율 (${dateString})</div>`;
+        html += renderExchangeTable(res.table1, true) + '</div>';
+        html += `<div><div class="exchange-table-title">기간 평균환율</div>`;
+        html += renderExchangeTable(res.table2, false) + '</div>';
+        html += '</div>';
+        container.innerHTML = html;
+      })
+      .withFailureHandler(function (error) {
+        container.innerHTML = `<div style="padding: 20px; color:#FF6B6B; text-align:center;">환율 정보를 불러오는데 실패했습니다.</div>`;
+        console.error(error);
+      })
+      .getExchangeRateData();
+  };
+
+  window.refreshAll = function (forceUpdate = false) { refreshNews(forceUpdate); };
+
+  function buildPortalButtons(fetchedMenuGroups) {
+    const buttonContainer = document.getElementById('button-container');
+    if (!fetchedMenuGroups || fetchedMenuGroups.length === 0) {
+      buttonContainer.innerHTML = '<div class="p-3" style="color:#9AA1AC;">메뉴 데이터가 없습니다. 바로가기 시트를 확인해주세요.</div>';
+      return;
+    }
+    let buttonHtml = '';
+    let isFirstItem = true; // 첫 항목(메인 포털 자기 자신)은 버튼 목록에서 제외
+    fetchedMenuGroups.forEach(group => {
+      group.forEach(link => {
+        if (isFirstItem) { isFirstItem = false; return; }
+        const isInactive = link.title.startsWith('TBD') || !link.url || link.url.includes('TBD') || link.isInactiveFromSheet;
+        const btnClass = isInactive ? 'portal-btn tbd' : 'portal-btn';
+        const href = link.url || 'javascript:void(0)';
+        let iconClass = link.icon;
+        if (!iconClass || (!iconClass.includes('bi-') && !iconClass.includes('bi '))) {
+          iconClass = 'bi-gear-wide-connected';
+        }
+        const iconHtml = `<i class="${iconClass.includes('bi ') ? iconClass : 'bi ' + iconClass}"></i>`;
+        buttonHtml += `
+          <a href="${href}" class="${btnClass}" target="_blank">
+            <div class="icon-circle">${iconHtml}</div>
+            ${link.title}
+          </a>`;
+      });
+    });
+    buttonContainer.innerHTML = buttonHtml;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!window.isAccessLogged) {
+      window.isAccessLogged = true;
+      setTimeout(() => { google.script.run.logAccess("메-SRM"); }, 1000);
+    }
+
+    const buttonContainer = document.getElementById('button-container');
+    buttonContainer.innerHTML = '<div class="text-center w-100 py-4"><div class="spinner-border" style="color:#F4C430;" role="status"></div><div class="mt-2" style="font-size:0.9rem; color:#9AA1AC;">메뉴를 불러오는 중입니다...</div></div>';
+
+    google.script.run
+      .withSuccessHandler(function (userInfo) {
+        applyUserGreeting(userInfo);
+        google.script.run
+          .withSuccessHandler(function (fetchedMenuGroups) {
+            renderHeaderUI(userInfo.email, "메-SRM", fetchedMenuGroups);
+            buildPortalButtons(fetchedMenuGroups);
+          })
+          .withFailureHandler(function (error) {
+            console.error("메뉴 버튼 동적 생성 에러:", error);
+            buttonContainer.innerHTML = '<div class="p-3" style="color:#FF6B6B;">메뉴를 불러오는데 실패했습니다.</div>';
+            renderHeaderUI(userInfo.email, "메-SRM", []);
+          })
+          .getMenuLinks();
+      })
+      .withFailureHandler(function (error) {
+        console.error("유저 정보 로드 실패: ", error);
+        applyUserGreeting(null);
+        renderHeaderUI(null, "메-SRM");
+        google.script.run
+          .withSuccessHandler(buildPortalButtons)
+          .withFailureHandler(function (menuErr) {
+            console.error("메뉴 로드 에러:", menuErr);
+            buttonContainer.innerHTML = '<div class="p-3" style="color:#FF6B6B;">메뉴를 불러오는데 실패했습니다.</div>';
+          })
+          .getMenuLinks();
+      })
+      .getUserDetails();
+
+    renderInitialArchivedNews();
+    loadExchangeRates();
+  });
+
+  window.refreshGreeting = function () {
+    const msgContainer = document.getElementById('greeting-message-display');
+    const refreshBtn = document.getElementById('greeting-refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.disabled = true;
+      refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    }
+    google.script.run
+      .withSuccessHandler(function (newGreeting) {
+        msgContainer.innerText = newGreeting;
+        if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh'; }
+      })
+      .withFailureHandler(function (error) {
+        console.error("덕담 로딩 실패:", error);
+        if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh'; }
+      })
+      .getRandomGreeting();
+  };
+
+  // 기존 document.body.style.zoom 방식은 비표준 CSS라 브라우저별로 동작이 다르고
+  // 창 너비가 좁아지면 과도하게 축소되는 문제가 있어, 배율 범위를 제한해 안전장치를 둠.
+  // 장기적으로는 zoom 대신 CSS clamp()/rem 기반 반응형으로 전환을 추천.
+  function applyZoomScaling() {
+    const baseWidth = 2560;
+    const currentWidth = window.innerWidth;
+    let zoomRatio = currentWidth / baseWidth;
+    zoomRatio = Math.min(Math.max(zoomRatio, 0.75), 1.15);
+    document.body.style.zoom = zoomRatio;
+  }
+  window.addEventListener('load', applyZoomScaling);
+  window.addEventListener('resize', applyZoomScaling);
+  applyZoomScaling();
+</script>
+</body>
+</html>
