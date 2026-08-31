@@ -14,101 +14,67 @@ function doGet(e) {
 }
 
 function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  try {
+    return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  } catch (e) {
+    return "";
+  }
 }
 
 function getUserDetails() {
-  let email = 'Unknown';
+  let email = '';
   try { 
       email = Session.getActiveUser().getEmail(); 
   } catch(e) { 
       Logger.log("getActiveUser() 에러: " + e.toString());
   }
   
-  // 구글 보안 정책 및 멀티 로그인 이슈로 getEmail()이 빈 값("")을 반환할 수 있으므로 강력한 폴백 구성
   if (!email || email.trim() === "" || email === "Unknown") {
     try {
       email = Session.getEffectiveUser().getEmail();
-    } catch(e) {
-      email = 'dohee.cho@ai.samsunghealthcare.com';
-    }
+    } catch(e) {}
   }
   
-  const userId = email.split('@')[0];
+  let userId = "";
+  if (email && email.trim() !== "" && email !== "Unknown") {
+    userId = email.split('@')[0];
+  }
+  
   let userName = "";
   let deptName = "";
   
-  // 로컬 폴백용 사용자 정보 맵 (스프레드시트가 연동 해제되거나 시트 에러가 발생해도 완벽 작동하도록 구성)
-  const userFallbackMap = {
-    "dohee.cho": { name: "조도희", dept: "구매그룹" },
-    "hm2521.kwon": { name: "권혁민", dept: "구매그룹" },
-    "ky3247.kim": { name: "김경율", dept: "구매그룹" },
-    "nt.kim": { name: "김나단", dept: "구매그룹" },
-    "mh501.kim": { name: "김미현", dept: "구매그룹" },
-    "kmjun.kim": { name: "김민준", dept: "구매그룹" },
-    "yumi91.kim": { name: "김유미", dept: "구매그룹" },
-    "yubeom.kim": { name: "김유범", dept: "구매그룹" },
-    "es0901.kim": { name: "김은선", dept: "구매그룹" },
-    "jung.bae.kim": { name: "김정배", dept: "구매그룹" },
-    "jinchul2.kim": { name: "김진철", dept: "구매그룹" },
-    "hr1206.kim": { name: "김효령", dept: "구매그룹" },
-    "seongoh.noh": { name: "노성오", dept: "구매그룹" },
-    "sehyun4.park": { name: "박세현", dept: "구매그룹" },
-    "jy3124.park": { name: "박재용", dept: "구매그룹" },
-    "jps.baek": { name: "백정필", dept: "구매그룹" },
-    "jungjin.seo": { name: "서정진", dept: "구매그룹" },
-    "juwon.seo": { name: "서주원", dept: "구매그룹" },
-    "mjnew.wang": { name: "왕민정", dept: "구매그룹" },
-    "sangduek.lee": { name: "이상득", dept: "구매그룹" },
-    "eunho3.lee": { name: "이은호", dept: "구매그룹" },
-    "je0408.lee": { name: "이정은", dept: "구매그룹" },
-    "sujin.jeong": { name: "정수진", dept: "구매그룹" },
-    "jinsang.jung": { name: "정진상", dept: "구매그룹" },
-    "hyoseok.cho": { name: "조효석", dept: "구매그룹" },
-    "jisoon8.park": { name: "박지순", dept: "구매그룹" },
-    "tu.kang": { name: "강태욱", dept: "구매그룹" },
-    "syn.joo": { name: "주승연", dept: "구매그룹" }
-  };
-
-  let loadedFromSheet = false;
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (ss) {
-      const sheet = ss.getSheetByName("사용자정보");
-      if (sheet) {
-        const lastRow = sheet.getLastRow();
-        if (lastRow > 1) {
-          const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
-          for (let i = 0; i < data.length; i++) {
-            if (data[i][0] && String(data[i][0]).trim() === userId) {
-              if (data[i][1]) userName = String(data[i][1]).trim();
-              if (data[i][2]) deptName = String(data[i][2]).trim();
-              loadedFromSheet = true;
-              break;
+  if (userId) {
+    userName = userId.toUpperCase();
+    try {
+      const logSpreadsheetId = "1-qBeuf94mvboL0zZkfVgEAtgKsZiAAD6A6d9XjPlwb8";
+      const ss = SpreadsheetApp.openById(logSpreadsheetId);
+      if (ss) {
+        const sheet = ss.getSheetByName("사용자정보");
+        if (sheet) {
+          const lastRow = sheet.getLastRow();
+          if (lastRow > 1) {
+            const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+            for (let i = 0; i < data.length; i++) {
+              if (data[i][0] && String(data[i][0]).trim().toLowerCase() === userId.toLowerCase()) {
+                userName = String(data[i][1] || '').trim() || userId.toUpperCase();
+                deptName = String(data[i][2] || '').trim();
+                break;
+              }
             }
           }
         }
       }
+    } catch (e) {
+      Logger.log("getUserDetails 스프레드시트 로드 에러: " + e.toString());
     }
-  } catch (e) {
-    Logger.log("getUserDetails 스프레드시트 로드 에러: " + e.toString());
-  }
-  
-  // 스프레드시트 로드가 실패했거나 사용자가 없는 경우 로컬 폴백 맵 적용
-  if (!loadedFromSheet || !userName) {
-    const fallbackUser = userFallbackMap[userId];
-    if (fallbackUser) {
-      userName = fallbackUser.name;
-      deptName = fallbackUser.dept;
-    } else {
-      userName = userId ? userId.toUpperCase() : "사용자";
-      deptName = "구매그룹";
-    }
+  } else {
+    userName = "User";
+    deptName = "삼성메디슨";
   }
   
   return {
-    email: email,
-    id: userId,
+    email: email || "",
+    id: userId || "Unknown",
     name: userName,
     dept: deptName
   };
@@ -144,76 +110,39 @@ function fetchUserDeptAndName() {
     if (!email || email.trim() === "" || email === "Unknown") {
       try {
         email = Session.getEffectiveUser().getEmail();
-      } catch(e) {
-        email = 'dohee.cho@ai.samsunghealthcare.com';
-      }
+      } catch(e) {}
     }
     
-    const userId = email.split('@')[0];
+    let userId = "";
+    if (email && email.trim() !== "" && email !== "Unknown") {
+      userId = email.split('@')[0];
+    }
     
-    // 로컬 폴백용 사용자 정보 맵
-    const userFallbackMap = {
-      "dohee.cho": { name: "조도희", dept: "구매그룹" },
-      "hm2521.kwon": { name: "권혁민", dept: "구매그룹" },
-      "ky3247.kim": { name: "김경율", dept: "구매그룹" },
-      "nt.kim": { name: "김나단", dept: "구매그룹" },
-      "mh501.kim": { name: "김미현", dept: "구매그룹" },
-      "kmjun.kim": { name: "김민준", dept: "구매그룹" },
-      "yumi91.kim": { name: "김유미", dept: "구매그룹" },
-      "yubeom.kim": { name: "김유범", dept: "구매그룹" },
-      "es0901.kim": { name: "김은선", dept: "구매그룹" },
-      "jung.bae.kim": { name: "김정배", dept: "구매그룹" },
-      "jinchul2.kim": { name: "김진철", dept: "구매그룹" },
-      "hr1206.kim": { name: "김효령", dept: "구매그룹" },
-      "seongoh.noh": { name: "노성오", dept: "구매그룹" },
-      "sehyun4.park": { name: "박세현", dept: "구매그룹" },
-      "jy3124.park": { name: "박재용", dept: "구매그룹" },
-      "jps.baek": { name: "백정필", dept: "구매그룹" },
-      "jungjin.seo": { name: "서정진", dept: "구매그룹" },
-      "juwon.seo": { name: "서주원", dept: "구매그룹" },
-      "mjnew.wang": { name: "왕민정", dept: "구매그룹" },
-      "sangduek.lee": { name: "이상득", dept: "구매그룹" },
-      "eunho3.lee": { name: "이은호", dept: "구매그룹" },
-      "je0408.lee": { name: "이정은", dept: "구매그룹" },
-      "sujin.jeong": { name: "정수진", dept: "구매그룹" },
-      "jinsang.jung": { name: "정진상", dept: "구매그룹" },
-      "hyoseok.cho": { name: "조효석", dept: "구매그룹" },
-      "jisoon8.park": { name: "박지순", dept: "구매그룹" },
-      "tu.kang": { name: "강태욱", dept: "구매그룹" },
-      "syn.joo": { name: "주승연", dept: "구매그룹" }
-    };
+    let displayName = "삼성메디슨 User";
     
-    let loaded = false;
-    let displayName = "";
-    try {
-      const ss = SpreadsheetApp.openById("1-qBeuf94mvboL0zZkfVgEAtgKsZiAAD6A6d9XjPlwb8");
-      const sheet = ss.getSheetByName("사용자정보");
-      if (sheet) {
-        const data = sheet.getDataRange().getDisplayValues();
-        for (let i = 0; i < data.length; i++) {
-          if (data[i][0] === userId) {
-            const name = data[i][1] || '';
-            const dept = data[i][2] || '';
-            displayName = dept ? `${dept} ${name}` : name;
-            loaded = true;
-            break;
+    if (userId) {
+      displayName = userId.toUpperCase();
+      try {
+        const ss = SpreadsheetApp.openById("1-qBeuf94mvboL0zZkfVgEAtgKsZiAAD6A6d9XjPlwb8");
+        const sheet = ss.getSheetByName("사용자정보");
+        if (sheet) {
+          const data = sheet.getDataRange().getDisplayValues();
+          for (let i = 0; i < data.length; i++) {
+            if (data[i][0] && String(data[i][0]).trim().toLowerCase() === userId.toLowerCase()) {
+              const name = String(data[i][1] || '').trim();
+              const dept = String(data[i][2] || '').trim();
+              displayName = dept ? `${dept} ${name}` : name;
+              break;
+            }
           }
         }
-      }
-    } catch(e) {
-    }
-    
-    if (!loaded || !displayName) {
-      const fallbackUser = userFallbackMap[userId];
-      if (fallbackUser) {
-        displayName = `${fallbackUser.dept} ${fallbackUser.name}`;
-      } else {
-        displayName = `구매그룹 ${userId ? userId.toUpperCase() : "USER"}`;
+      } catch(e) {
+        Logger.log("fetchUserDeptAndName 에러: " + e.toString());
       }
     }
     return displayName;
   } catch (e) {
-    return "구매그룹 조도희";
+    return "삼성메디슨 User";
   }
 }
 
@@ -488,7 +417,7 @@ function getRandomGreeting() {
     "오늘은 부디 칼퇴하세요!",
     "내일도 부디 칼퇴하세요!",
     "머리아픈 일은 다음에 하세요!",
-    "오늘은 이쁜말만 하세요",
+    "오늘도 이쁜말만 하세요",
     "졸리면 어디가서 자고오세요",
     "주말에는 가족과 함께!"
   ];
