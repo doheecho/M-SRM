@@ -1,20 +1,99 @@
 <style>
-    #global-header { flex-shrink: 0; background-color: #1428A0; height: 50px; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white; margin-bottom: 20px; }
+    /* ==========================================
+       GNB THEME VARIABLES (Light & Dark Configuration)
+       ========================================== */
+    :root {
+        --gnb-bg: #1428A0;
+        --gnb-text: #E0E0E0;
+        --gnb-border: none;
+        --gnb-btn-border: rgba(255,255,255,0.5);
+        --gnb-btn-hover-bg: rgba(255,255,255,0.1);
+        --gnb-btn-hover-color: white;
+        --module-title-color: #00BFFF;
+    }
+    body.dark-theme {
+        --gnb-bg: rgb(36,36,36);             /* 상단헤더색상 */
+        --gnb-text: rgb(217,217,217);        /* 접속자 부서명,이름,접속시간,목록박스색 */
+        --gnb-border: none;
+        --gnb-btn-border: rgb(217,217,217);  /* 목록박스색 */
+        --gnb-btn-hover-bg: rgba(217,217,217,0.1);
+        --gnb-btn-hover-color: rgb(255,255,255);
+        --module-title-color: rgb(246,146,17); /* 모듈명(메-SRM) 폰트 색상 */
+    }
+    body.dark-theme #global-header {
+        background-color: rgb(36,36,36) !important;
+    }
+    body.dark-theme #global-header .module-title {
+        color: rgb(246,146,17) !important;
+    }
+    body.dark-theme #global-header .user-info-text,
+    body.dark-theme #global-header .user-info-text span,
+    body.dark-theme #global-header #dynamic-user-name,
+    body.dark-theme #global-header #dropdownMenuButton {
+        color: rgb(217,217,217) !important;
+        border-color: rgb(217,217,217) !important;
+    }
+
+    /* Layout and Component Styles */
+    #global-header { flex-shrink: 0; background-color: var(--gnb-bg); height: 50px; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white; margin-bottom: 20px; border-bottom: var(--gnb-border); }
     #global-header .header-title { font-weight: 700; font-size: 1.1rem; }
-    #global-header .module-title { color: #00BFFF; font-weight: 700; }
+    #global-header .module-title { color: var(--module-title-color); font-weight: 700; }
     #global-header .header-buttons { display: flex; align-items: center; gap: 15px; }
     #global-header .header-buttons .btn { font-size: 0.85rem; }
     #global-header .btn-icon-menu { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; }
     #global-header .btn-icon-menu svg { width: 22px; height: 22px; }
     #global-header .btn-icon-menu::after { display: none; }
     #global-header .dropdown-item {font-size: 0.9rem; font-weight: 700; }
-    #global-header .user-info-text { font-size: 0.9rem; font-weight: 500; color: #E0E0E0; }
+    #global-header .user-info-text { font-size: 0.9rem; font-weight: 500; color: var(--gnb-text); }
     #global-header .confidential-text { font-size: 0.9rem; font-weight: 700; color: #FF5274; margin-left: 15px; }
-    #global-header .dropdown-divider { margin: 0.3rem 0; }
+    #global-header .dropdown-divider { margin: 0.3rem 0; border-color: var(--border-color, #e0e4e8); }
+    
+    #global-header .btn-outline-light {
+        border-color: var(--gnb-btn-border);
+        color: var(--gnb-text);
+    }
+    #global-header .btn-outline-light:hover {
+        background-color: var(--gnb-btn-hover-bg);
+        color: var(--gnb-btn-hover-color);
+        border-color: var(--gnb-btn-hover-bg);
+    }
 </style>
 
 <script>
-    function renderHeaderUI(userEmail, moduleTitle) {
+    // Theme switcher logic
+    function applyTheme(theme) {
+        const body = document.body;
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        const lightImg = document.getElementById('hero-image-light');
+        const darkImg = document.getElementById('hero-image-dark');
+        
+        if (theme === 'dark') {
+            body.classList.add('dark-theme');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '테마설정: Light';
+            }
+            if (lightImg) lightImg.style.display = 'none';
+            if (darkImg) darkImg.style.display = 'block';
+            localStorage.setItem('srm-theme', 'dark');
+        } else {
+            body.classList.remove('dark-theme');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '테마설정: Dark';
+            }
+            if (lightImg) lightImg.style.display = 'block';
+            if (darkImg) darkImg.style.display = 'none';
+            localStorage.setItem('srm-theme', 'light');
+        }
+    }
+    window.applyTheme = applyTheme;
+    
+    window.toggleTheme = function() {
+        const currentTheme = localStorage.getItem('srm-theme') || 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+    };
+
+    function renderHeaderUI(userInfoOrEmail, moduleTitle, menuGroups) {
         let headerElement = document.getElementById('global-header');
         if (!headerElement) {
             headerElement = document.createElement('header');
@@ -23,7 +102,17 @@
         }
 
         let initialName = 'USER';
-        if (userEmail) initialName = userEmail.split('@')[0].toUpperCase();
+        let isObject = (userInfoOrEmail && typeof userInfoOrEmail === 'object');
+        
+        if (isObject) {
+            if (userInfoOrEmail.dept) {
+                initialName = `${userInfoOrEmail.dept} ${userInfoOrEmail.name}`;
+            } else {
+                initialName = userInfoOrEmail.name || 'USER';
+            }
+        } else if (userInfoOrEmail && typeof userInfoOrEmail === 'string') {
+            initialName = userInfoOrEmail.split('@')[0].toUpperCase();
+        }
 
         if (!window.initialConnectTime) {
             const now = new Date();
@@ -54,33 +143,49 @@
         
         headerElement.innerHTML = html;
 
-        if (google && google.script && google.script.run) {
+        function populateMenu(groups) {
+            const menuList = document.getElementById('dynamic-menu-list');
+            if (!menuList) return;
+            
+            if (groups && groups.length > 0) {
+                let menuHtml = '';
+                groups.forEach((group, index) => {
+                    group.forEach(link => {
+                        menuHtml += `<li><a class="dropdown-item" href="${link.url}" target="_blank">${link.title}</a></li>`;
+                    });
+                    if (index < groups.length - 1) {
+                        menuHtml += `<li><hr class="dropdown-divider"></li>`;
+                    }
+                });
+                
+                // Add theme switcher at the bottom
+                menuHtml += `<li><hr class="dropdown-divider"></li>`;
+                menuHtml += `<li><a class="dropdown-item" href="javascript:void(0)" onclick="toggleTheme()" id="theme-toggle-btn">테마설정: Dark</a></li>`;
+                
+                menuList.innerHTML = menuHtml;
+                applyTheme(localStorage.getItem('srm-theme') || 'light');
+            } else {
+                let menuHtml = '<li><a class="dropdown-item text-danger" href="#">메뉴를 불러올 수 없습니다.</a></li>';
+                menuHtml += `<li><hr class="dropdown-divider"></li>`;
+                menuHtml += `<li><a class="dropdown-item" href="javascript:void(0)" onclick="toggleTheme()" id="theme-toggle-btn">테마설정: Dark</a></li>`;
+                menuList.innerHTML = menuHtml;
+                applyTheme(localStorage.getItem('srm-theme') || 'light');
+            }
+        }
+
+        if (menuGroups && menuGroups.length > 0) {
+            populateMenu(menuGroups);
+        } else if (google && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(populateMenu).getMenuLinks();
+        }
+
+        if (!isObject && google && google.script && google.script.run) {
             google.script.run.withSuccessHandler(function(fullName) {
                 const nameSpan = document.getElementById('dynamic-user-name');
                 if (nameSpan && fullName) {
                     nameSpan.innerHTML = fullName;
                 }
             }).fetchUserDeptAndName();
-
-            google.script.run.withSuccessHandler(function(menuGroups) {
-                const menuList = document.getElementById('dynamic-menu-list');
-                if (!menuList) return;
-                
-                if (menuGroups && menuGroups.length > 0) {
-                    let menuHtml = '';
-                    menuGroups.forEach((group, index) => {
-                        group.forEach(link => {
-                            menuHtml += `<li><a class="dropdown-item" href="${link.url}" target="_blank">${link.title}</a></li>`;
-                        });
-                        if (index < menuGroups.length - 1) {
-                            menuHtml += `<li><hr class="dropdown-divider"></li>`;
-                        }
-                    });
-                    menuList.innerHTML = menuHtml;
-                } else {
-                    menuList.innerHTML = '<li><a class="dropdown-item text-danger" href="#">메뉴를 불러올 수 없습니다.</a></li>';
-                }
-            }).getMenuLinks();
         }
     }
 </script>
