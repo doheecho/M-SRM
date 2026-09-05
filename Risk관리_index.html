@@ -477,6 +477,78 @@
     .animate-flash {
       animation: banner-flash 3s infinite ease-in-out;
     }
+
+    .text-shatter {
+      color: #7f1d1d !important;
+    }
+    body.dark-theme .text-shatter {
+      color: #fda4af !important; /* 다크모드에서 가시성이 뛰어난 살짝 밝은 빨간색(연분홍색) */
+    }
+
+    /* SCM Chronological Timeline CSS */
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+      padding-left: 24px;
+    }
+    .timeline-marker {
+      position: absolute;
+      left: -9px;
+      top: 4px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid var(--srm-surface);
+      box-shadow: 0 0 0 2px var(--srm-border);
+      background: var(--srm-border);
+      transition: all 0.2s ease;
+    }
+    .timeline-item:hover .timeline-marker {
+      transform: scale(1.2);
+    }
+    .timeline-card {
+      background: var(--srm-surface-2) !important;
+      border: 1px solid var(--srm-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      box-shadow: var(--srm-shadow-sm);
+      transition: all 0.25s ease;
+    }
+    .timeline-card:hover {
+      box-shadow: var(--srm-shadow-md);
+    }
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .timeline-date {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--srm-accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .timeline-summary {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--srm-text);
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+    .timeline-text {
+      font-size: 0.82rem;
+      color: var(--srm-text-secondary);
+      line-height: 1.55;
+      display: none; /* Collapsed by default, expand on click! */
+      margin-top: 10px;
+      border-top: 1px dashed var(--srm-border);
+      padding-top: 10px;
+      white-space: normal;
+    }
+    
   </style>
 </head>
 <body>
@@ -504,7 +576,7 @@
       <section class="kpi-grid">
         <div class="kpi-card" id="kpi-card-상" onclick="toggleKpiFilter('상', this)">
           <div class="info">
-            <span class="label"><span class="text-danger fw-bold me-1" style="font-size: 1.1rem;">●</span>Risk 상 (심각)</span>
+            <span class="label"><span class="text-danger fw-bold me-1" style="font-size: 1.1rem;">●</span>Risk 상 (경고)</span>
             <div id="kpi-high-count-box" class="d-flex align-items-baseline gap-1 flex-wrap">
               <!-- Loaded dynamically -->
             </div>
@@ -595,7 +667,7 @@
           <div class="d-flex" style="width: 100%; height: 100%;">
             <!-- Left Side: Risk Summary Cards Panel -->
             <div id="risk-summary-panel" style="width: 320px; flex-shrink: 0; background: var(--srm-surface); border-right: 1px solid var(--srm-border); display: flex; flex-direction: column; height: 100%; padding: 15px; overflow-y: auto;">
-              <div id="risk-summary-cards" class="d-flex flex-column gap-3" style="flex: 1; min-height: 0;">
+              <div id="risk-summary-cards" class="d-flex flex-column gap-2" style="flex: 1; min-height: 0;">
                 <!-- Loaded dynamically -->
               </div>
             </div>
@@ -683,6 +755,116 @@
           <div class="loading text-center py-5">데이터 불러오는 중…</div>
         </div>
       </section>
+
+      <!-- 5. 조달·납기 (GitHub Data Lake Views) 섹션 블록 (조달/납기 탭 전용) -->
+      <section class="block mb-4" id="procurement-risk-block" style="display: none; margin-top: 16px;">
+        <h3 id="dashboard-procurement-title">
+          <span><i class="bi bi-truck me-1"></i>시장 동향 Report 조회</span>
+        </h3>
+        
+        <!-- Controls: Segmented Control & Dropdown & Search -->
+        <div class="p-3 border rounded shadow-sm mb-3" style="background: var(--srm-surface) !important; border: 1.5px solid var(--srm-border) !important; border-radius: 12px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+          
+          <!-- View Type Segmented Control -->
+          <div class="d-flex flex-column gap-1">
+            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">Report 조회 기준:</span>
+            <div id="dl-view-type-group" class="d-flex gap-1" style="background: var(--srm-surface-2) !important; padding: 3px; border-radius: 8px;">
+              <button type="button" class="btn btn-sm btn-primary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600;" onclick="switchDlViewType('theme')">Theme (테마별)</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; background: transparent; color: var(--srm-text-muted);" onclick="switchDlViewType('category')">Category (품목군별)</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; background: transparent; color: var(--srm-text-muted);" onclick="switchDlViewType('vendor')">Vendor (제조사별)</button>
+            </div>
+          </div>
+          
+          <!-- Target Selector Dropdown -->
+          <div class="d-flex flex-column gap-1" style="min-width: 280px;">
+            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">세부분류 선택:</span>
+            <select id="dl-report-selector" class="form-select fw-bold" style="height: 32px; padding: 4px 12px; font-size: 0.85rem;" onchange="loadDlReport()">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <!-- [신설] 표시 모드 토글 (테이블 뷰 vs 타임라인 이력 뷰) -->
+          <div class="d-flex flex-column gap-1">
+            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">표시 모드:</span>
+            <div id="dl-display-mode-group" class="d-flex gap-1" style="background: var(--srm-surface-2) !important; padding: 3px; border-radius: 8px;">
+              <button type="button" id="btn-dl-mode-table" class="btn btn-sm btn-primary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600;" onclick="setDlDisplayMode('table')">📊 테이블</button>
+              <button type="button" id="btn-dl-mode-timeline" class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; background: transparent; color: var(--srm-text-muted);" onclick="setDlDisplayMode('timeline')">📅 타임라인 이력</button>
+            </div>
+          </div>
+
+          <!-- Free text Search input inside the report -->
+          <div class="d-flex flex-column gap-1" style="min-width: 250px; flex-grow: 1;">
+            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">텍스트 검색:</span>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text" style="height: 32px;"><i class="bi bi-search"></i></span>
+              <input type="text" id="dl-search-input" class="form-control" placeholder="검색할 키워드나 벤더명을 입력하세요..." style="height: 32px;" oninput="filterDlTable()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini-Dashboard Metrics for the loaded report -->
+        <div id="dl-metrics-row" class="row g-3 mb-3" style="display: none;">
+          <div class="col-md-3">
+            <div class="p-3 border rounded shadow-sm d-flex align-items-center justify-content-between" style="background: var(--srm-surface) !important; border-radius: 10px; border-color: var(--srm-border) !important;">
+              <span class="small text-muted fw-bold">총 발견 건수</span>
+              <span id="dl-metric-total" class="fw-bold text-primary" style="font-size: 1.3rem;">0건</span>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 border rounded shadow-sm d-flex align-items-center justify-content-between" style="background: var(--srm-surface) !important; border-radius: 10px; border-color: var(--srm-border) !important;">
+              <span class="small text-danger fw-bold">● High (위험)</span>
+              <span id="dl-metric-high" class="fw-bold text-danger" style="font-size: 1.3rem;">0건</span>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 border rounded shadow-sm d-flex align-items-center justify-content-between" style="background: var(--srm-surface) !important; border-radius: 10px; border-color: var(--srm-border) !important;">
+              <span class="small text-warning fw-bold" style="color: #f59e0b !important;">● Medium (주의)</span>
+              <span id="dl-metric-medium" class="fw-bold text-warning" style="font-size: 1.3rem; color: #f59e0b !important;">0건</span>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 border rounded shadow-sm d-flex align-items-center justify-content-between" style="background: var(--srm-surface) !important; border-radius: 10px; border-color: var(--srm-border) !important;">
+              <span class="small text-success fw-bold">● Low (양호)</span>
+              <span id="dl-metric-low" class="fw-bold text-success" style="font-size: 1.3rem;">0건</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standardized Data Table -->
+        <div id="dl-table-wrapper" class="market-table-wrapper" style="height: 520px; overflow-y: auto;">
+          <table class="table table-bordered table-hover table-sm text-center mb-0 align-middle" id="dl-data-table" style="color: var(--srm-text) !important; font-size: 0.82rem !important; border-collapse: collapse;">
+            <thead class="table-light" style="position: sticky; top: 0; z-index: 10;">
+              <tr>
+                <th style="width: 8%; background-color: var(--srm-surface-2) !important;">날짜</th>
+                <th style="width: 15%; background-color: var(--srm-surface-2) !important;">소분류</th>
+                <th style="width: 8%; background-color: var(--srm-surface-2) !important;">위험도</th>
+                <th style="width: 41%; background-color: var(--srm-surface-2) !important; text-align: left; padding-left: 12px;">시황 세부 동향 및 리스크 리포트</th>
+                <th style="width: 14%; background-color: var(--srm-surface-2) !important;">연관 품목</th>
+                <th style="width: 14%; background-color: var(--srm-surface-2) !important;">연관 벤더</th>
+              </tr>
+            </thead>
+            <tbody id="dl-data-tbody">
+              <tr>
+                <td colspan="6" class="text-muted py-5" style="background: var(--srm-surface) !important;">상단의 조회 기준과 리포트를 선택하여 깃허브 시황 정보를 확인하세요.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- [신설] SCM Chronological Timeline Wrapper -->
+        <div id="dl-timeline-wrapper" style="display: none; height: 520px; overflow-y: auto; padding: 25px 30px; background: var(--srm-surface) !important; border: 1px solid var(--srm-border); border-radius: 12px;">
+          <div id="dl-timeline-content" style="position: relative; margin-left: 20px; border-left: 2px solid var(--srm-border); padding-bottom: 10px;">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. 실시간 SCM 모듈별 주석 (Comments) - 제목/테두리 없이 깔끔하게 좌하단에 배치 -->
+      <div id="scm-comments-block" style="margin-top: 15px; margin-bottom: 20px; font-size: 0.82rem; color: var(--srm-text-secondary) !important; line-height: 1.6; text-align: left; padding-left: 5px;">
+        <div id="scm-comments-content">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
 
     </main>
   </div>
@@ -874,12 +1056,94 @@
     </div>
   </div>
 
+  <!-- SCM Earthquake Magnitude Selection & Input Modal -->
+  <div class="modal fade" id="earthquakeMagnitudeModal" tabindex="-1" aria-labelledby="earthquakeMagnitudeModalLabel" aria-hidden="true" style="z-index: 2000;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.25);">
+        <div class="modal-header text-white" style="background-color: #be123c;">
+          <h5 class="modal-title fw-bold" id="earthquakeMagnitudeModalLabel"><i class="bi bi-activity me-1"></i>지진 시뮬레이션 - 지진 규모 입력 및 가이드</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" style="background-color: var(--srm-surface) !important;">
+          <p class="small text-muted mb-3" style="font-size: 0.82rem;">지진 발생 지점을 기준으로 SCM 타격 범위를 시뮬레이션할 지진 규모(Richter Scale)를 선택하거나 입력하세요.</p>
+          <div class="table-responsive" style="border: 1px solid var(--srm-border); border-radius: 8px; margin-bottom: 20px;">
+            <table class="table table-bordered text-center align-middle mb-0" style="font-size: 0.8rem; color: var(--srm-text);">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 20%; background-color: var(--srm-surface-2) !important;">지진 규모 (M)</th>
+                  <th style="width: 25%; background-color: var(--srm-surface-2) !important;">피해 강도 수준</th>
+                  <th style="width: 15%; background-color: var(--srm-surface-2) !important;">최대 영향 반경</th>
+                  <th style="width: 40%; background-color: var(--srm-surface-2) !important;">정밀 피해 예측 가이드</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="fw-bold text-success" style="font-size: 0.85rem; background-color: var(--srm-surface-2) !important;">M &lt; 5.0<br>(약진)</td>
+                  <td class="fw-bold text-success">🟢 영향 없음<br>(정상 가동)</td>
+                  <td style="font-variant-numeric: tabular-nums;">약 40 km</td>
+                  <td style="text-align: left; padding: 10px; line-height: 1.4;">
+                    • 지진파 감쇄 지역 혹은 가벼운 미세 지동 감지.<br>
+                    • 공장 내진 설계 안전 수준 확보로 생산 지장 0%.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-warning" style="font-size: 0.85rem; background-color: var(--srm-surface-2) !important;">5.0 &lt;= M &lt; 6.5<br>(중/강진)</td>
+                  <td class="fw-bold text-warning" style="color: #ea580c !important;">⚡ 경미한 영향<br>(설비 일시정지)</td>
+                  <td style="font-variant-numeric: tabular-nums;">약 160 km</td>
+                  <td style="text-align: left; padding: 10px; line-height: 1.4;">
+                    • 진앙 최인접권 유의미한 수평 흔들림 발생.<br>
+                    • 노광/검침 정밀 설비 세이프 락(Safe-Lock) 작동.<br>
+                    • 보정(Calibration) 완료 후 12~24시간 정비 다운타임.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-danger" style="font-size: 0.85rem; background-color: var(--srm-surface-2) !important;">6.5 &lt;= M &lt; 7.8<br>(강진)</td>
+                  <td class="fw-bold text-danger">🚨 극심한 피해<br>(생산 중단)</td>
+                  <td style="font-variant-numeric: tabular-nums;">약 390 km</td>
+                  <td style="text-align: left; padding: 10px; line-height: 1.4;">
+                    • 진앙 직접 충격으로 건물 벽 크랙 및 배관 부분 파손.<br>
+                    • 무진실(Clean Room) 가습/공조기 유량 누수 및 수금 통제.<br>
+                    • 라인 재셋팅에 따른 1~2주간 전면 가동 지연 리스크 가중.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-bold" style="font-size: 0.85rem; color: #4c0519; background-color: var(--srm-surface-2) !important;">M &gt;= 7.8<br>(초대형 강진)</td>
+                  <td class="fw-bold" style="color: #4c0519;">💀 초토화<br>(영구 폐쇄)</td>
+                  <td style="font-variant-numeric: tabular-nums;">650 km 초과</td>
+                  <td style="text-align: left; padding: 10px; line-height: 1.4;">
+                    • 파멸적 지동으로 공장 본동 붕괴 및 설비 전도/완파.<br>
+                    • 광역 용수/전력 유틸리티 단절 및 전 수급망 마비.<br>
+                    • 가동 기지 불능 상태(복구 불가), 긴급 이중화 대체선 발굴 즉시 요구.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="d-flex align-items-center justify-content-between p-3 border rounded" style="background: var(--srm-surface-2) !important; border-color: var(--srm-border) !important;">
+            <div class="fw-bold text-dark" style="font-size: 0.85rem; color: var(--srm-text) !important;">
+              <i class="bi bi-activity text-danger me-1"></i>지진 규모 직접 입력 (Richter Scale M):
+            </div>
+            <div class="d-flex gap-2">
+              <input type="number" id="eq-magnitude-input" min="1.0" max="10.0" step="0.1" class="form-control text-center fw-bold" style="width: 110px; height: 32px; font-size: 0.88rem;" value="7.0">
+              <span class="d-flex align-items-center fw-bold text-secondary" style="font-size: 0.85rem;">M</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="background-color: var(--srm-surface-3); padding: 12px 20px; display: flex; gap: 12px; justify-content: flex-end;">
+          <button type="button" class="btn btn-danger text-white fw-bold px-3 py-1.5" style="font-size: 0.85rem;" onclick="runEarthquakeSimulationFromModal()">🔴 시뮬레이션 실행</button>
+          <button type="button" class="btn btn-secondary fw-bold px-3 py-1.5" style="font-size: 0.85rem;" data-bs-dismiss="modal">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const serverBootstrap = <?!= bootstrapData ?>;
     
-    // 국가 코드 한글 매핑 객체 신설 탑재 (ReferenceError 원천 해결!)
-    const countryCodeMap = { "KR": "한국", "US": "미국", "CN": "중국", "JP": "일본", "VN": "베트남", "TW": "대만", "SG": "싱가포르", "DE": "독일", "GB": "영국" };
+    // 국가 코드 한글 매핑
+    const countryCodeMap = { "US": "미국", "CN": "중국", "JP": "일본", "KR": "대한민국", "VN": "베트남", "MY": "말레이시아", "TW": "대만", "DE": "독일", "PH": "필리핀", "IN": "인도", "ID": "인도네시아", "TH": "태국", "SG": "싱가포르", "MX": "멕시코", "GB": "영국", "FR": "프랑스", "IT": "이탈리아", "CA": "캐나다", "BR": "브라질", "SV": "엘살바도르", "NL": "네덜란드", "HU": "헝가리", "SW": "스웨덴", "MA": "모로코", "IL": "이스라엘" };
     
     let mapLocations = []; // SCM Raw 실시간 좌표
     let allScmLocations = []; // Risk 분류 무관 전체 SCM 위치 리스트
@@ -954,6 +1218,7 @@
       partnerDetailModalInstance = new bootstrap.Modal(document.getElementById('partnerDetailModal'));
       scmMapDetailModalInstance = new bootstrap.Modal(document.getElementById('scmMapDetailModal'));
       window.__typhoonStrengthModalInstance = new bootstrap.Modal(document.getElementById('typhoonStrengthModal'));
+      window.__earthquakeModalInstance = new bootstrap.Modal(document.getElementById('earthquakeMagnitudeModal'));
       
       loadScmRiskDashboard();
     }
@@ -1028,12 +1293,14 @@
       const factorsBlock = document.getElementById("market-factors-block");
       const splitRow = document.getElementById("market-tables-split-row");
       const partnersBlock = document.getElementById("market-risk-partners-block");
+      const procurementBlock = document.getElementById("procurement-risk-block");
 
       // Hide all panels initially
       mapBlock.style.display = "none";
       factorsBlock.style.display = "none";
       splitRow.style.display = "none";
       partnersBlock.style.display = "none";
+      if (procurementBlock) procurementBlock.style.display = "none";
 
       if (category === "통합 관리") {
         mapBlock.style.display = "block";
@@ -1085,11 +1352,61 @@
         if (typeof window.loadMarketFactors === 'function') {
           window.loadMarketFactors();
         }
+      } else if (category === "조달 · 납기") {
+        if (procurementBlock) {
+          procurementBlock.style.display = "block";
+          if (typeof window.initDlViewModule === 'function') {
+            window.initDlViewModule();
+          }
+        }
       }
 
       calculateKPIs();
       renderRiskSummaryCards();
       setupLeafletMap();
+
+      // 주석 섹션 내용 동적 갱신
+      const commentsContent = document.getElementById("scm-comments-content");
+      if (commentsContent) {
+        let commentsHtml = "";
+        if (category === "통합 관리") {
+          commentsHtml = `
+            주석 1: <br>
+            주석 2: <br>
+            주석 3: <br>
+            주석 4:
+          `;
+        } else if (category === "지정학") {
+          commentsHtml = `
+            주석 1: <br>
+            주석 2: <br>
+            주석 3: <br>
+            주석 4:
+          `;
+        } else if (category === "경영 안정성") {
+          commentsHtml = `
+            주석 1: <br>
+            주석 2: <br>
+            주석 3: <br>
+            주석 4:
+          `;
+        } else if (category === "원가 · 시황") {
+          commentsHtml = `
+            주석 1: <br>
+            주석 2: <br>
+            주석 3: <br>
+            주석 4:
+          `;
+        } else if (category === "조달 · 납기") {
+          commentsHtml = `
+            주석 1: <br>
+            주석 2: <br>
+            주석 3: <br>
+            주석 4:
+          `;
+        }
+        commentsContent.innerHTML = commentsHtml;
+      }
     };
 
     /**
@@ -1139,7 +1456,7 @@
         const warnRisks = riskStats.filter(s => s.level === '중' || s.level.includes("⚠️"));
         
         if (highRisks.length > 0) {
-          html += `<div class="fw-bold text-danger mb-2" style="font-size: 0.95rem !important;"><i class="bi bi-exclamation-circle-fill me-1"></i>Risk 상 (심각)</div>`;
+          html += `<div class="fw-bold text-danger mb-2" style="font-size: 0.95rem !important;"><i class="bi bi-exclamation-circle-fill me-1"></i>Risk 상 (경고)</div>`;
           highRisks.forEach(r => {
             html += `<div style="margin-left: 8px; margin-bottom: 12px; line-height: 1.5; font-size: 0.95rem !important;">` +
                     `<b class="text-danger" style="font-weight: 700; font-size: 0.95rem !important;">■ ${escapeHtml(r.name)} : </b>` +
@@ -1166,7 +1483,7 @@
       const stabilityDetails = document.getElementById("gauge-details-stability");
       if (stabilityDetails) {
         stabilityDetails.innerHTML = `
-          <div class="fw-bold text-danger mb-2" style="font-size: 0.95rem !important;"><i class="bi bi-exclamation-circle-fill me-1"></i>Risk 상 (심각)</div>
+          <div class="fw-bold text-danger mb-2" style="font-size: 0.95rem !important;"><i class="bi bi-exclamation-circle-fill me-1"></i>Risk 상 (경고)</div>
           <div style="margin-left: 8px; margin-bottom: 12px; line-height: 1.5; font-size: 0.95rem !important;"><b class="text-danger" style="font-weight: 700; font-size: 0.95rem !important;">■ 금리 변동성 쇼크 : </b><span style="font-weight: normal; color: var(--srm-text); font-size: 0.95rem !important;">미국 연준 기준금리 고공행진 장기화에 따른 금융 대출 조달 비용 가중</span><br><span style="color: var(--srm-text-secondary); font-size: 0.95rem !important; margin-left: 10px;">- 1개 협력사, 1개 품목군</span></div>
           <div class="fw-bold text-warning mb-2 mt-3" style="font-size: 0.95rem !important; color: #f59e0b !important;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Risk 중 (주의)</div>
           <div style="margin-left: 8px; margin-bottom: 12px; line-height: 1.5; font-size: 0.95rem !important;"><b class="text-warning" style="font-weight: 700; font-size: 0.95rem !important; color: #f59e0b !important;">■ 외환 환율 급등 리스크 : </b><span style="font-weight: normal; color: var(--srm-text); font-size: 0.95rem !important;">원-달러 실효환율 급변동 및 결제 마진 이탈 리스크 누적</span><br><span style="color: var(--srm-text-secondary); font-size: 0.95rem !important; margin-left: 10px;">- 5개 협력사, 2개 품목군</span></div>
@@ -1177,7 +1494,7 @@
       const costDetails = document.getElementById("gauge-details-cost");
       if (costDetails) {
         costDetails.innerHTML = `
-          <div class="fw-bold text-danger mb-2" style="font-size: 0.95rem !important;"><i class="bi bi-exclamation-circle-fill me-1"></i>Risk 상 (심각)</div>
+          <div class="fw-bold text-danger mb-2" style="font-size: 0.95rem !important;"><i class="bi bi-exclamation-circle-fill me-1"></i>Risk 상 (경고)</div>
           <div style="margin-left: 8px; margin-bottom: 12px; line-height: 1.5; font-size: 0.95rem !important;"><b class="text-danger" style="font-weight: 700; font-size: 0.95rem !important;">■ 핵심 광물 일일 시세 급등 : </b><span style="font-weight: normal; color: var(--srm-text); font-size: 0.95rem !important;">야간 원자재 선물 실시간 트레이딩 호가 오버슈팅 발생 우려</span><br><span style="color: var(--srm-text-secondary); font-size: 0.95rem !important; margin-left: 10px;">- 4개 협력사, 3개 품목군</span></div>
           <div class="fw-bold text-warning mb-2 mt-3" style="font-size: 0.95rem !important; color: #f59e0b !important;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Risk 중 (주의)</div>
           <div style="margin-left: 8px; margin-bottom: 12px; line-height: 1.5; font-size: 0.95rem !important;"><b class="text-warning" style="font-weight: 700; font-size: 0.95rem !important; color: #f59e0b !important;">■ SCFI 해운운임 이상 급등 : </b><span style="font-weight: normal; color: var(--srm-text); font-size: 0.95rem !important;">상해 종합 컨테이너 운임지수 적체에 따른 해운 선적 납기 지연 리스크</span><br><span style="color: var(--srm-text-secondary); font-size: 0.95rem !important; margin-left: 10px;">- 2개 협력사, 1개 품목군</span></div>
@@ -1428,6 +1745,13 @@
     /**
      * 지정학 탭 전용 좌측 Risk 집계 통계 네모표 그리기 (★지정학 탭 외 타 카테고리는 무조건 공란!)
      */
+    window.focusScmSite = function(lat, lon, vendor, city, riskName, borderStyle, event) {
+      if (event) event.stopPropagation();
+      if (!map) return;
+      map.setView([lat, lon], 8);
+      L.popup().setLatLng([lat, lon]).setContent('<div style="font-size: 0.8rem; font-family: sans-serif;"><b>' + escapeHtml(vendor) + '</b><br>' + escapeHtml(city) + '<br><span style="color: ' + borderStyle + '; font-weight: bold;">' + escapeHtml(riskName) + '</span></div>').openOn(map);
+    };
+
     function renderRiskSummaryCards() {
       const container = document.getElementById("risk-summary-cards");
       
@@ -1455,33 +1779,105 @@
       container.innerHTML = sortedStats.map(stat => {
         const borderStyle = getBorderColor(stat.level);
         const isActive = activeFocusedRiskName === stat.name;
-        const activeThemeColor = getGradationColor(stat.name, stat.level);
         
-        // 카드 내의 불필요한 '지도 포커싱 / 포커싱 해제' 문구를 소거하고 극도로 슬림한 세로 높이(Compact Card)로 세련화!
-        return `
-          <div class="p-3 border rounded text-dark bg-white risk-stat-card" 
-               data-risk-name="${escapeHtml(stat.name)}" 
-               data-level="${escapeHtml(stat.level)}" 
-               style="border-left: ${isActive ? '8px' : '5px'} solid ${borderStyle} !important; box-shadow: ${isActive ? 'var(--srm-shadow-md)' : 'var(--srm-shadow-sm)'}; cursor: pointer; transition: all 0.2s;" 
-               onclick="focusRiskOnMap('${escapeHtml(stat.name)}', this)">
-            <div class="fw-bold mb-2 text-dark d-flex align-items-center justify-content-between" style="font-size: 0.88rem;">
-              <span><i class="bi bi-shield-fill-exclamation me-1 text-danger"></i>${escapeHtml(stat.name)}</span>
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${activeThemeColor};"></span>
+        let headerBg = "linear-gradient(135deg, #0284c7, #0ea5e9)"; // 기본 (하)
+        let riskLvlText = "🔍 양호 (하)";
+        
+        if (stat.level === '상' || stat.level.includes("🚨") || stat.level.includes("고위험")) {
+          headerBg = "linear-gradient(135deg, #991b1b, #be123c)";
+          riskLvlText = "🚨 경고 (상)";
+        } else if (stat.level === '중' || stat.level.includes("⚠️") || stat.level.includes("경고")) {
+          headerBg = "linear-gradient(135deg, #d97706, #f59e0b)";
+          riskLvlText = "⚠️ 주의 (중)";
+        }
+        
+        const escapedStatName = escapeHtml(stat.name).replace(/'/g, "\\'");
+        
+        let html = `
+          <div class="geopolitical-risk-card mb-4" style="font-family: 'Noto Sans KR', sans-serif;">
+            <!-- Region Header -->
+            <div class="p-3 border rounded text-white shadow-sm ${isActive ? 'mb-3' : 'mb-0'}" style="background: ${headerBg}; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s;" onclick="focusRiskOnMap('${escapedStatName}', this)">
+              <div class="fw-bold d-flex align-items-center justify-content-between mb-1" style="font-size: 0.92rem;">
+                <span class="d-flex align-items-center gap-2">
+                  <i class="bi bi-geo-alt-fill text-warning ${isActive ? 'animate-pulse' : ''}"></i>
+                  <span>${escapeHtml(stat.name)}</span>
+                </span>
+                <span><i class="bi ${isActive ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 1.1rem;"></i></span>
+              </div>
+              <div style="font-size: 0.76rem; opacity: 0.85; margin-bottom: 4px;">
+                대상 국가: ${escapeHtml(stat.country || '-')}
+              </div>
+              <div class="mt-1" style="font-size: 0.85rem; font-weight: 700; text-align: left; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
+                ${escapeHtml(stat.typeText || '-')}
+              </div>
             </div>
-            <div class="d-flex flex-column gap-1 text-muted" style="font-size: 0.78rem;">
-              <div><i class="bi bi-building me-1"></i>협력사: <b class="text-dark">${stat.vendorCount}개사</b></div>
-              <div><i class="bi bi-geo-alt me-1"></i>도시: <b class="text-dark">${stat.cityCount}개 도시</b></div>
-              <div><i class="bi bi-box me-1"></i>품목군: <b class="text-dark">${stat.itemGroupCount}개 부품군</b></div>
-            </div>
-          </div>
         `;
+        
+        if (isActive) {
+          html += `
+            <!-- Summary Quick Info -->
+            <div class="p-3 border rounded bg-white text-dark shadow-sm mb-3" style="background: var(--srm-surface) !important; border: 1px solid var(--srm-border) !important; border-radius: 12px; font-size: 0.8rem;">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted"><i class="bi bi-shield-exclamation me-1"></i>Risk 등급</span>
+                <b class="text-dark">${escapeHtml(riskLvlText)}</b>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted"><i class="bi bi-building me-1"></i>영향권 내 협력사</span>
+                <b class="text-dark">${stat.vendorCount}개사</b>
+              </div>
+              <div class="mt-2 pt-2 border-top" style="font-size: 0.74rem; color: #555; line-height: 1.35;">
+                <b>Risk 요약:</b><br>${escapeHtml(stat.desc || '-')}
+              </div>
+            </div>
+
+            <div class="fw-bold mb-2 text-dark mt-2 ps-1" style="font-size: 0.82rem; color: var(--srm-text) !important;">
+              <i class="bi bi-card-list me-1 text-danger"></i>영향 협력사 (${stat.vendorCount}개사)
+            </div>
+            <div class="d-flex flex-column gap-3 ps-1">
+          `;
+          
+          const activeLocations = mapLocations.filter(row => row.risk === stat.name);
+          const grouped = getGroupedSites(activeLocations);
+          
+          if (grouped.length === 0) {
+            html += `
+              <div class="p-3 border rounded text-center text-muted bg-white shadow-sm" style="background: var(--srm-surface) !important; border: 1px solid var(--srm-border) !important; border-radius: 12px; font-size: 0.78rem;">
+                영향을 받는 SCM 협력사 공장이 없습니다.
+              </div>
+            `;
+          } else {
+            html += grouped.map(site => {
+              const escVendor = escapeHtml(site.vendor).replace(/'/g, "\\'");
+              const escCity = escapeHtml(site.city).replace(/'/g, "\\'");
+              const escRisk = escapeHtml(stat.name).replace(/'/g, "\\'");
+              
+              return `
+                <div class="p-3 border rounded text-dark bg-white shadow-sm" 
+                     style="border-left: 6px solid ${borderStyle} !important; border: 1.5px solid var(--srm-border); border-radius: 12px; cursor: pointer; transition: all 0.2s;"
+                     onclick="window.focusScmSite(${site.lat}, ${site.lon}, '${escVendor}', '${escCity}', '${escRisk}', '${borderStyle}', event)">
+                  <div class="fw-bold mb-1 text-dark" style="font-size: 0.84rem;">
+                    <i class="bi bi-building me-1"></i>${escapeHtml(site.vendor)} (${escapeHtml(site.country)})
+                  </div>
+                  <div class="text-muted" style="font-size: 0.75rem;">
+                    <i class="bi bi-box me-1"></i>${escapeHtml(site.city)} / ${escapeHtml(site.combinedItems)} (${escapeHtml(site.combinedTypes || '-')})
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+          
+          html += `</div>`;
+        }
+        
+        html += `</div>`;
+        return html;
       }).join("");
     }
 
     /**
      * 특정 지정학 Risk 카드 클릭 시 해당 좌표들만 필터링하고, 표식들을 외곽 큰 원형으로 감싸 범위 가이드를 그려주는 초정밀 기하학 인터랙션
      */
-    window.focusRiskOnMap = function(riskName, cardElement) {
+    window.focusRiskOnMap = function(riskName, cardElement, preventFitBounds) {
       if (!map) return;
       
       // 1) SCM Risk 토글 오프 (동일 리스크 재클릭 시 활성화 취소 및 전체 복원!)
@@ -1610,8 +2006,10 @@
           interactive: false    
         }).addTo(map);
 
-        const featureGroup = L.featureGroup(matchedMarkers);
-        map.fitBounds(featureGroup.getBounds().pad(0.35));
+        if (!preventFitBounds) {
+          const featureGroup = L.featureGroup(matchedMarkers);
+          map.fitBounds(featureGroup.getBounds().pad(0.35));
+        }
       }
     };
 
@@ -1632,7 +2030,7 @@
     /**
      * SCM Map (Leaflet) 지도 및 마커 렌더링 엔진 (무지개 8색 색상 분기 표출)
      */
-    function setupLeafletMap() {
+    function setupLeafletMap(preventFitBounds) {
       if (!map) {
         map = L.map('map').setView([15, 10], 2); 
         
@@ -1718,7 +2116,7 @@
         currentMarkers.push(marker);
       });
       
-      if (currentMarkers.length > 0 && !window.focusCircle && !focusOverlay) {
+      if (!preventFitBounds && currentMarkers.length > 0 && !window.focusCircle && !focusOverlay) {
         const featureGroup = L.featureGroup(currentMarkers);
         map.fitBounds(featureGroup.getBounds().pad(0.25));
       }
@@ -1742,9 +2140,9 @@
       });
       
       if (activeFocusedRiskName) {
-        focusRiskOnMap(activeFocusedRiskName);
+        focusRiskOnMap(activeFocusedRiskName, null, true); // preventFitBounds = true
       } else {
-        setupLeafletMap();
+        setupLeafletMap(true); // preventFitBounds = true
       }
     };
 
@@ -2477,6 +2875,7 @@
       }
       
       // SCM 원래 리포트 리스트 및 마커 복원
+      calculateKPIs(); // 워크시트에 설정해놓은 실제 Risk 현황 디폴트값으로 상단 대시보드 복원!
       renderRiskSummaryCards();
       setupLeafletMap();
     };
@@ -2676,12 +3075,12 @@
       path.forEach((node, pIdx) => {
         // 강풍 물류 지연 반경 (파란색 투명 원)
         const gCircle = L.circle(node, {
-          radius: r_gale, color: "#38bdf8", weight: 1.0, opacity: 0.15, fillColor: "#38bdf8", fillOpacity: 0.015, interactive: false
+          radius: r_gale, color: "#38bdf8", weight: 1.5, opacity: 0.45, fillColor: "#38bdf8", fillOpacity: 0.08, interactive: false
         }).addTo(map);
         
         // 폭풍 가동 중단 반경 (붉은색 투명 원)
         const sCircle = L.circle(node, {
-          radius: r_storm, color: "#ef4444", weight: 1.0, opacity: 0.25, fillColor: "#ef4444", fillOpacity: 0.035, interactive: false
+          radius: r_storm, color: "#ef4444", weight: 1.8, opacity: 0.55, fillColor: "#ef4444", fillOpacity: 0.12, interactive: false
         }).addTo(map);
 
         window.__EARTHQUAKE_LAYERS.push(gCircle, sCircle);
@@ -2696,11 +3095,11 @@
             const interpNode = L.latLng(interpLat, interpLng);
 
             const gCircleInterp = L.circle(interpNode, {
-              radius: r_gale, color: "#38bdf8", weight: 0.8, opacity: 0.1, fillColor: "#38bdf8", fillOpacity: 0.01, interactive: false
+              radius: r_gale, color: "#38bdf8", weight: 1.0, opacity: 0.3, fillColor: "#38bdf8", fillOpacity: 0.06, interactive: false
             }).addTo(map);
             
             const sCircleInterp = L.circle(interpNode, {
-              radius: r_storm, color: "#ef4444", weight: 0.8, opacity: 0.15, fillColor: "#ef4444", fillOpacity: 0.02, interactive: false
+              radius: r_storm, color: "#ef4444", weight: 1.2, opacity: 0.4, fillColor: "#ef4444", fillOpacity: 0.08, interactive: false
             }).addTo(map);
 
             window.__EARTHQUAKE_LAYERS.push(gCircleInterp, sCircleInterp);
@@ -2827,6 +3226,9 @@
       // 8. 좌측 패널 보고서 렌더링
       renderTyphoonReportOnLeftPanel(strength, affectedSites);
 
+      // SCM 상단 KPI 대시보드 박스 실시간 동적 표출
+      updateSimulationKPIs(affectedSites);
+
       // 9. 지도 카메라 포커싱
       if (affectedSites.length > 0) {
         const boundsCoords = [];
@@ -2916,17 +3318,17 @@
             <div class="p-3 border rounded text-dark bg-white shadow-sm" 
                  style="border-left: 6px solid ${site.impactColor} !important; border: 1.5px solid var(--srm-border); border-radius: 12px; cursor: pointer; transition: all 0.2s;"
                  onclick="map.setView([${site.lat}, ${site.lon}], 8); L.popup().setLatLng([${site.lat}, ${site.lon}]).setContent('<div style=\\'font-size: 0.8rem; font-family: sans-serif;\\'><b>${escapeHtml(site.vendor)}</b><br>${escapeHtml(site.city)}<br><span style=\\'color: ${site.impactColor}; font-weight: bold;\\'>${site.impactLevel}</span></div>').openOn(map);">
-              <div class="fw-bold mb-1 text-dark d-flex align-items-center justify-content-between" style="font-size: 0.84rem;">
-                <span><i class="bi bi-building me-1"></i>${escapeHtml(site.vendor)}</span>
-                <span class="badge" style="background-color: ${site.impactColor}; font-size: 0.65rem; padding: 3px 6px;">${site.distance.toFixed(0)}km</span>
+              <div class="fw-bold mb-1 text-dark" style="font-size: 0.84rem;">
+                <i class="bi bi-building me-1"></i>${escapeHtml(site.vendor)} (${escapeHtml(site.country)})
               </div>
-              <div class="d-flex flex-column gap-1 text-muted" style="font-size: 0.75rem;">
-                <div><i class="bi bi-geo-alt me-1"></i>국가/도시: <b class="text-dark">${escapeHtml(site.country)} / ${escapeHtml(site.city)}</b></div>
-                <div><i class="bi bi-compass me-1"></i>경로 최단거리: <b class="text-danger">${site.distance.toFixed(1)} km</b></div>
-                <div><i class="bi bi-box me-1"></i>공급 부품: <b class="text-dark">${escapeHtml(site.combinedItems)} (${escapeHtml(site.combinedTypes || '-')})</b></div>
-                <div class="mt-2 pt-2 border-top" style="font-size: 0.72rem; color: #555; line-height: 1.3;">
-                  <b style="color: ${site.impactColor};">${site.impactLevel}</b><br>${escapeHtml(site.impactDesc)}
-                </div>
+              <div class="text-muted" style="font-size: 0.75rem;">
+                <i class="bi bi-box me-1"></i>${escapeHtml(site.city)} / ${escapeHtml(site.combinedItems)} (${escapeHtml(site.combinedTypes || '-')})
+              </div>
+              <div class="mt-2 pt-2 border-top text-muted" style="font-size: 0.75rem; line-height: 1.35;">
+                <i class="bi bi-compass me-1"></i>경로 최단거리: <b class="text-danger">${site.distance.toFixed(1)} km</b>
+              </div>
+              <div class="mt-2 pt-2 border-top" style="font-size: 0.72rem; color: #555; line-height: 1.3;">
+                <b style="color: ${site.impactColor};">${site.impactLevel}</b><br>${escapeHtml(site.impactDesc)}
               </div>
             </div>
           `;
@@ -3009,6 +3411,7 @@
       }
       
       // SCM 원래 리포트 리스트 및 마커 복원
+      calculateKPIs(); // 워크시트에 설정해놓은 실제 Risk 현황 디폴트값으로 상단 대시보드 복원!
       renderRiskSummaryCards();
       setupLeafletMap();
     };
@@ -3033,7 +3436,7 @@
         }
       });
       
-      // 만약 2500km 이내에 SCM 공장이 전혀 없으면 경고 (아무 바다나 찍는 것 방지)
+      // 만약 2500km 이내에 당사 협력사 없을 경우 
       if (!closestSite || minDist > 2500000) {
         alert("SCM 공장이 위치한 인근 국가 영토를 클릭해 주세요.");
         return;
@@ -3049,11 +3452,11 @@
             <i class="bi bi-geo-alt-fill text-danger me-1"></i>특정 국가 Risk 시뮬레이터
           </div>
           <div style="font-size: 0.81rem; margin-bottom: 12px; line-height: 1.45; color: #4b5563;">
-            선택한 국가는 <b style="color: #1e3a8a; font-size: 0.85rem;">${countryName} (${countryCode})</b> 입니다. Risk 유형을 선택하세요.
+            선택한 국가는 <b style="color: #1e3a8a; font-size: 0.85rem;">${countryName}</b> 입니다. Risk 유형을 선택하세요.
           </div>
           <div class="d-flex flex-column" style="gap: 6px;">
             <button type="button" class="btn btn-xs btn-danger fw-bold py-1.5 text-xs text-start" style="border-radius: 4px; font-size: 0.74rem;" onclick="runRegionRiskSimulation('${countryCode}', 'lockdown')">
-              🚫 전면 봉쇄 (생산 및 출하 중단)
+              🚨 전면 봉쇄
             </button>
             <button type="button" class="btn btn-xs btn-warning fw-bold py-1.5 text-xs text-start text-dark" style="border-radius: 4px; font-size: 0.74rem;" onclick="runRegionRiskSimulation('${countryCode}', 'capacity_drop')">
               ⚠️ 가동율 하락
@@ -3086,21 +3489,21 @@
       
       if (type === 'lockdown') {
         typeText = "전면 봉쇄";
-        riskLvlText = "💀 심각 (전체 중단)";
+        riskLvlText = "🚨 경고 (상)";
         headerBg = "linear-gradient(135deg, #991b1b, #be123c)";
-        summaryText = "지역 봉쇄로 인한 조업 정지 및 물류 통제 상태입니다. 모든 협력사로부터 자재 반출 및 완제품 생산이 중지되어 공급 마비 리스크가 매우 극심합니다.";
+        summaryText = "지역 봉쇄로 인한 생산중단 및 물류통제 상태입니다. 지역 내 모든 협력사의 생산 및 선적이 중지되어 제품 공급이 불가합니다.";
         impactColor = "#be123c";
       } else if (type === 'capacity_drop') {
         typeText = "가동율 하락";
-        riskLvlText = "⚠️ 경고 (중)";
+        riskLvlText = "⚠️ 주의 (중)";
         headerBg = "linear-gradient(135deg, #d97706, #f59e0b)";
-        summaryText = "제한적 조업 및 물류 인프라 통제로 공급 능력이 50% 수준으로 드롭되었습니다. 부품 입고 납기에 1~2주의 병목이 누적 예상됩니다.";
+        summaryText = "정부 통제로 제한적 조업 및 물류이동이 가능한 상태입니다. 지역 내에서 생상되는 부품의 납기가 최소 1~2주 지연되고 납품수량 감소 가능성이 있습니다.";
         impactColor = "#ea580c";
       } else if (type === 'monitoring') {
         typeText = "모니터링";
-        riskLvlText = "🔍 주의 (하)";
+        riskLvlText = "🔍 양호 (하)";
         headerBg = "linear-gradient(135deg, #0284c7, #0ea5e9)";
-        summaryText = "공급망 모니터링 대상 구역입니다. 현재 평시 수준 가동 상태이나 여파 추이 관찰 및 긴급 점검 대기 주의 단계입니다.";
+        summaryText = "현재 특이동향 없고 SCM 이슈사항 모니터링 중입니다. 현재 평시 수준 가동 중이며 추이 관찰 중입니다.";
         impactColor = "#0284c7";
       }
       
@@ -3110,10 +3513,10 @@
           <div class="p-3 border rounded text-white shadow-sm mb-3" style="background: ${headerBg}; border: none; border-radius: 12px;">
             <div class="fw-bold d-flex align-items-center gap-2 mb-1" style="font-size: 0.92rem;">
               <i class="bi bi-geo-alt-fill text-warning animate-pulse"></i>
-              <span>지역 리스크 시뮬레이션</span>
+              <span>국가별 Risk 시뮬레이션</span>
             </div>
             <div style="font-size: 0.76rem; opacity: 0.85; margin-bottom: 8px;">
-              대상 국가: ${countryName} (${countryCode})
+              대상 국가: ${countryName}
             </div>
             <div class="d-flex justify-content-between align-items-baseline">
               <span class="small fw-semibold">시뮬레이션 유형</span>
@@ -3124,7 +3527,7 @@
           <!-- Summary Quick Info -->
           <div class="p-3 border rounded bg-white text-dark shadow-sm mb-3" style="background: var(--srm-surface) !important; border: 1px solid var(--srm-border) !important; border-radius: 12px; font-size: 0.8rem;">
             <div class="d-flex justify-content-between mb-1">
-              <span class="text-muted"><i class="bi bi-shield-exclamation me-1"></i>리스크 등급</span>
+              <span class="text-muted"><i class="bi bi-shield-exclamation me-1"></i>Risk 등급</span>
               <b class="text-dark">${riskLvlText}</b>
             </div>
             <div class="d-flex justify-content-between mb-1">
@@ -3132,11 +3535,11 @@
               <b class="text-dark">${affectedSites.length}개사</b>
             </div>
             <div class="mt-2 pt-2 border-top" style="font-size: 0.74rem; color: #555; line-height: 1.35;">
-              <b>영향 종합 요약:</b><br>${summaryText}
+              <b>Risk 요약:</b><br>${summaryText}
             </div>
             <div class="mt-3">
               <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-1" style="font-size: 0.74rem; font-weight: bold; border-radius: 6px;" onclick="cancelRegionSimulation()">
-                <i class="bi bi-arrow-counterclockwise me-1"></i>시뮬레이션 종료 및 복원
+                <i class="bi bi-arrow-counterclockwise me-1"></i>시뮬레이션 종료
               </button>
             </div>
           </div>
@@ -3161,16 +3564,14 @@
             <div class="p-3 border rounded text-dark bg-white shadow-sm" 
                  style="border-left: 6px solid ${site.impactColor} !important; border: 1.5px solid var(--srm-border); border-radius: 12px; cursor: pointer; transition: all 0.2s;"
                  onclick="map.setView([${site.lat}, ${site.lon}], 8); L.popup().setLatLng([${site.lat}, ${site.lon}]).setContent('<div style=\\'font-size: 0.8rem; font-family: sans-serif;\\'><b>${escapeHtml(site.vendor)}</b><br>${escapeHtml(site.city)}<br><span style=\\'color: ${site.impactColor}; font-weight: bold;\\'>${typeText} (${riskLvlText})</span></div>').openOn(map);">
-              <div class="fw-bold mb-1 text-dark d-flex align-items-center justify-content-between" style="font-size: 0.84rem;">
-                <span><i class="bi bi-building me-1"></i>${escapeHtml(site.vendor)}</span>
-                <span class="badge" style="background-color: ${site.impactColor}; font-size: 0.65rem; padding: 3px 6px;">${countryCode}</span>
+              <div class="fw-bold mb-1 text-dark" style="font-size: 0.84rem;">
+                <i class="bi bi-building me-1"></i>${escapeHtml(site.vendor)} (${countryCode})
               </div>
-              <div class="d-flex flex-column gap-1 text-muted" style="font-size: 0.75rem;">
-                <div><i class="bi bi-geo-alt me-1"></i>국가/도시: <b class="text-dark">${escapeHtml(site.country)} / ${escapeHtml(site.city)}</b></div>
-                <div><i class="bi bi-box me-1"></i>공급 부품: <b class="text-dark">${escapeHtml(site.combinedItems)} (${escapeHtml(site.combinedTypes || '-')})</b></div>
-                <div class="mt-2 pt-2 border-top" style="font-size: 0.72rem; color: #555; line-height: 1.3;">
-                  <b style="color: ${site.impactColor};">${typeText}</b><br>${escapeHtml(site.impactDesc)}
-                </div>
+              <div class="text-muted" style="font-size: 0.75rem;">
+                <i class="bi bi-box me-1"></i>${escapeHtml(site.city)} / ${escapeHtml(site.combinedItems)} (${escapeHtml(site.combinedTypes || '-')})
+              </div>
+              <div class="mt-2 pt-2 border-top" style="font-size: 0.72rem; color: #555; line-height: 1.3;">
+                <b style="color: ${site.impactColor};">${typeText}</b><br>${escapeHtml(site.impactDesc)}
               </div>
             </div>
           `;
@@ -3347,6 +3748,9 @@
       // 4. 좌측 요약 패널에 리포트 그리기
       renderRegionRiskReportOnLeftPanel(countryName, countryCode, type, affectedSites);
       
+      // SCM 상단 KPI 대시보드 박스 실시간 동적 표출
+      updateSimulationKPIs(affectedSites);
+      
       // 5. 대상 국가 마커들 영역으로 카메라 줌 피팅
       const targetCountryMarkers = affectedSites.map(s => [s.lat, s.lon]);
       if (targetCountryMarkers.length > 0) {
@@ -3357,22 +3761,47 @@
     /**
      * 지진 시뮬레이션: 지도 클릭 시 진도 입력 및 분석 실행
      */
+    /**
+     * 지진 시뮬레이션: 지도 클릭 시 진도 입력 가이드 모달 띄우기
+     */
     window.handleMapClickForEarthquake = function(e) {
       if (!window.__EARTHQUAKE_ACTIVE) return;
-      
-      const input = prompt("진도(규모)를 입력하세요.\n(n.n 형식의 Richter 규모, 예: 5.0 ~ 9.0)\n\n※ 입력된 규모에 따라 지진파 확산 및 SCM 협력사 타격 영향권이 시뮬레이션됩니다.");
-      if (input === null) return; // 취소
-      
-      const magnitude = parseFloat(input);
+
+      // Save latlng to pending variable
+      window.__PENDING_EARTHQUAKE_LATLNG = e.latlng;
+
+      // Set input box value to default (e.g. 7.0)
+      const inputEl = document.getElementById("eq-magnitude-input");
+      if (inputEl) inputEl.value = "7.0";
+
+      // Show Bootstrap Modal
+      if (window.__earthquakeModalInstance) {
+        window.__earthquakeModalInstance.show();
+      }
+    };
+
+    /**
+     * 지진 시뮬레이션: 모달에서 실행 단추 클릭 시 최종 시뮬레이션 구동
+     */
+    window.runEarthquakeSimulationFromModal = function() {
+      const inputEl = document.getElementById("eq-magnitude-input");
+      if (!inputEl) return;
+
+      const magnitude = parseFloat(inputEl.value);
       if (isNaN(magnitude) || magnitude <= 0 || magnitude > 10) {
         alert("유효한 지진 규모를 입력해주세요.\n(0 초과 10 이하의 숫자)");
         return;
       }
-      
-      window.__EARTHQUAKE_CENTER = e.latlng;
+
+      if (window.__earthquakeModalInstance) {
+        window.__earthquakeModalInstance.hide();
+      }
+
+      const latlng = window.__PENDING_EARTHQUAKE_LATLNG;
+      window.__EARTHQUAKE_CENTER = latlng;
       window.__EARTHQUAKE_MAGNITUDE = magnitude;
-      
-      runEarthquakeAnalysis(e.latlng, magnitude);
+
+      runEarthquakeAnalysis(latlng, magnitude);
     };
 
     /**
@@ -3456,9 +3885,10 @@
       else {
         // 4) 파멸적 초대형 지진 (M >= 7.8)
         if (distMeters <= r1) {
+          const isDarkTheme = document.body.classList.contains('dark-theme') || (window.__SRM_THEME === 'dark');
           return {
             level: "💀 초토화 / 영구 폐쇄 (파멸적 붕괴)",
-            color: "#4c0519", // Very dark red/black
+            color: isDarkTheme ? "#fda4af" : "#7f1d1d",
             desc: "파멸적인 지진 직접 충격으로 공장 건물 본동이 심각하게 붕괴되거나 초고가 클린룸 노광 장비가 전도/완파되었습니다. 전 지역의 인프라가 마비되어 생산 기지 복구가 불가하며 영구 폐쇄 및 강제 대체선 발굴이 즉각 요구됩니다."
           };
         } else if (distMeters <= r2) {
@@ -3524,10 +3954,10 @@
         radius: 7, color: "#ffffff", weight: 2, fillColor: "#ff0000", fillOpacity: 1.0
       }).addTo(map);
       
-      const circle1 = L.circle(latlng, { radius: r1, color: "#7f1d1d", weight: 3.5, opacity: 0.9, fillColor: "#ef4444", fillOpacity: 0.25, interactive: false }).addTo(map);
-      const circle2 = L.circle(latlng, { radius: r2, color: "#b91c1c", weight: 2.5, opacity: 0.75, dashArray: "5, 5", fillColor: "#ef4444", fillOpacity: 0.15, interactive: false }).addTo(map);
-      const circle3 = L.circle(latlng, { radius: r3, color: "#dc2626", weight: 2.0, opacity: 0.6, dashArray: "8, 12", fillColor: "#ef4444", fillOpacity: 0.08, interactive: false }).addTo(map);
-      const circle4 = L.circle(latlng, { radius: r4, color: "#f87171", weight: 1.5, opacity: 0.45, dashArray: "4, 15", fillColor: "#ef4444", fillOpacity: 0.03, interactive: false }).addTo(map);
+      const circle1 = L.circle(latlng, { radius: r1, color: "#7f1d1d", weight: 4.0, opacity: 0.95, fillColor: "#ef4444", fillOpacity: 0.45, interactive: false }).addTo(map);
+      const circle2 = L.circle(latlng, { radius: r2, color: "#b91c1c", weight: 3.0, opacity: 0.85, dashArray: "5, 5", fillColor: "#ef4444", fillOpacity: 0.3, interactive: false }).addTo(map);
+      const circle3 = L.circle(latlng, { radius: r3, color: "#dc2626", weight: 2.5, opacity: 0.75, dashArray: "8, 12", fillColor: "#ef4444", fillOpacity: 0.2, interactive: false }).addTo(map);
+      const circle4 = L.circle(latlng, { radius: r4, color: "#f87171", weight: 2.0, opacity: 0.6, dashArray: "4, 15", fillColor: "#ef4444", fillOpacity: 0.12, interactive: false }).addTo(map);
 
       window.__EARTHQUAKE_LAYERS.push(centerMarker, circle1, circle2, circle3, circle4);
       
@@ -3672,7 +4102,7 @@
           </div>
 
           <div class="fw-bold mb-2 text-dark" style="font-size: 0.82rem; color: var(--srm-text) !important;">
-            <i class="bi bi-card-list me-1 text-danger"></i>타격 SCM 협력사 리스트 (${affectedSites.length}개사)
+            <i class="bi bi-card-list me-1 text-danger"></i>영향 협력사 (${affectedSites.length}개사)
           </div>
           
           <div class="d-flex flex-column gap-3">
@@ -3682,7 +4112,7 @@
         html += `
           <div class="p-4 border rounded text-center text-muted bg-white shadow-sm" style="background: var(--srm-surface) !important; border: 1px solid var(--srm-border) !important; border-radius: 12px; font-size: 0.78rem;">
             <i class="bi bi-emoji-smile text-success" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
-            반경 ${(magnitude * 85).toFixed(0)}km 내에 위치한<br>당사 SCM 협력사 공장이 없습니다.
+            반경 ${(magnitude * 85).toFixed(0)}km 내에 위치한<br>당사 협력사가 없습니다.
           </div>
         `;
       } else {
@@ -3691,17 +4121,17 @@
             <div class="p-3 border rounded text-dark bg-white shadow-sm" 
                  style="border-left: 6px solid ${site.impactColor} !important; border: 1.5px solid var(--srm-border); border-radius: 12px; cursor: pointer; transition: all 0.2s;"
                  onclick="map.setView([${site.lat}, ${site.lon}], 8); L.popup().setLatLng([${site.lat}, ${site.lon}]).setContent('<div style=\\'font-size: 0.8rem; font-family: sans-serif;\\'><b>${escapeHtml(site.vendor)}</b><br>${escapeHtml(site.city)}<br>거리: ${site.distance.toFixed(1)} km<br><span style=\\'color: ${site.impactColor}; font-weight: bold;\\'>${site.impactLevel}</span></div>').openOn(map);">
-              <div class="fw-bold mb-1 text-dark d-flex align-items-center justify-content-between" style="font-size: 0.84rem;">
-                <span><i class="bi bi-building me-1"></i>${escapeHtml(site.vendor)}</span>
-                <span class="badge" style="background-color: ${site.impactColor}; font-size: 0.65rem; padding: 3px 6px;">${site.distance.toFixed(0)}km</span>
+              <div class="fw-bold mb-1 text-dark" style="font-size: 0.84rem;">
+                <i class="bi bi-building me-1"></i>${escapeHtml(site.vendor)} (${escapeHtml(site.country)})
               </div>
-              <div class="d-flex flex-column gap-1 text-muted" style="font-size: 0.75rem;">
-                <div><i class="bi bi-geo-alt me-1"></i>국가/도시: <b class="text-dark">${escapeHtml(site.country)} / ${escapeHtml(site.city)}</b></div>
-                <div><i class="bi bi-compass me-1"></i>진앙지 거리: <b class="text-danger">${site.distance.toFixed(1)} km</b></div>
-                <div><i class="bi bi-box me-1"></i>공급 부품: <b class="text-dark">${escapeHtml(site.combinedItems)} (${escapeHtml(site.combinedTypes || '-')})</b></div>
-                <div class="mt-2 pt-2 border-top" style="font-size: 0.72rem; color: #555; line-height: 1.3;">
-                  <b style="color: ${site.impactColor};">${site.impactLevel}</b><br>${escapeHtml(site.impactDesc)}
-                </div>
+              <div class="text-muted" style="font-size: 0.75rem;">
+                <i class="bi bi-box me-1"></i>${escapeHtml(site.city)} / ${escapeHtml(site.combinedItems)} (${escapeHtml(site.combinedTypes || '-')})
+              </div>
+              <div class="mt-2 pt-2 border-top text-muted" style="font-size: 0.75rem; line-height: 1.35;">
+                <i class="bi bi-compass me-1"></i>진앙지까지의 거리: <b class="text-danger">${site.distance.toFixed(1)} km</b>
+              </div>
+              <div class="mt-2 pt-2 border-top" style="font-size: 0.72rem; color: #555; line-height: 1.3;">
+                <b style="color: ${site.impactColor};">${site.impactLevel}</b><br>${escapeHtml(site.impactDesc)}
               </div>
             </div>
           `;
@@ -3715,6 +4145,435 @@
       
       container.innerHTML = html;
     };
+
+    // ===== 조달 · 납기 (GitHub Data Lake View Module) =====
+    const DL_REPORTS = {
+      theme: [
+        { value: "leadtime_risk", label: "🚚 조달/납기 & 리드타임 위험" },
+        { value: "high_risk_dashboard", label: "⚠️ 초고위험 요약 대시보드" },
+        { value: "eol_tracker", label: "🚫 단종 & LTB 추적기" },
+        { value: "price_alerts", label: "💰 가격 변동 경보" },
+        { value: "disaster_and_accidents", label: "💥 자연재해 & 설비사고/결함" },
+        { value: "geopolitics_and_tariffs", label: "🌐 지정학적 규제 & 관세" },
+        { value: "corporate_actions", label: "🏢 기업 M&A & 감산/증산 계획" }
+      ],
+      category: [
+        { value: "ic", label: "IC" },
+        { value: "cpu", label: "CPU" },
+        { value: "gpu", label: "GPU" },
+        { value: "memory", label: "Memory" },
+        { value: "passive", label: "Passive" },
+        { value: "pcb", label: "PCB" },
+        { value: "storage", label: "Storage" },
+        { value: "other", label: "Others" }
+      ],
+      vendor: [
+        { value: "samsung", label: "Samsung" },
+        { value: "intel", label: "Intel" },
+        { value: "nvidia", label: "Nvidia" },
+        { value: "amd", label: "Amd" },
+        { value: "micron", label: "Micron" },
+        { value: "texas_instruments", label: "Texas Instruments" },
+        { value: "analog_devices", label: "Analog Devices" },
+        { value: "onsemi", label: "Onsemi" },
+        { value: "nexperia", label: "Nexperia" },
+        { value: "infineon", label: "Infineon" },
+        { value: "stmicroelectronics", label: "STMicroelectronics" },
+        { value: "murata", label: "Murata" },
+        { value: "renesas", label: "Renesas" },
+        { value: "sk_hynix", label: "SK하이닉스" },
+        { value: "kioxia", label: "Kioxia" },
+        { value: "western_digital", label: "Western Digital" },
+        { value: "seagate", label: "Seagate" },
+        { value: "toshiba", label: "Toshiba" },
+        { value: "lattice", label: "Lattice" },
+        { value: "taiyo_yuden", label: "Taiyo Yuden" },
+        { value: "yageo", label: "Yageo" },
+        { value: "tsmc", label: "TSMC" },
+        { value: "sony", label: "Sony" },
+        { value: "mediatek", label: "Mediatek" }
+      ]
+    };
+
+    let currentDlViewType = 'theme';
+    window.__DL_CURRENT_RECORDS = [];
+
+    window.initDlViewModule = function() {
+      switchDlViewType(currentDlViewType, true);
+    };
+
+    window.switchDlViewType = function(type, preventAutoLoad) {
+      currentDlViewType = type;
+      
+      // Update segmented buttons
+      const group = document.getElementById("dl-view-type-group");
+      if (group) {
+        group.querySelectorAll("button").forEach(btn => {
+          if (btn.getAttribute("onclick").includes(`'${type}'`)) {
+            btn.className = "btn btn-sm btn-primary py-1 px-3";
+            btn.style.removeProperty("background");
+            btn.style.removeProperty("color");
+            btn.style.removeProperty("border");
+          } else {
+            btn.className = "btn btn-sm btn-outline-secondary py-1 px-3";
+            btn.style.background = "transparent";
+            btn.style.border = "none";
+            btn.style.color = "var(--srm-text-muted)";
+          }
+        });
+      }
+
+      // Populate Selector with "All (전체)" prepended as the very first option!
+      const selector = document.getElementById("dl-report-selector");
+      if (selector) {
+        const allOption = `<option value="all">🌟 전체 (All - 전체 시황)</option>`;
+        const otherOptions = DL_REPORTS[type].map(item => `<option value="${item.value}">${item.label}</option>`).join("");
+        selector.innerHTML = allOption + otherOptions;
+      }
+
+      // Clear search input
+      const searchInput = document.getElementById("dl-search-input");
+      if (searchInput) searchInput.value = "";
+
+      if (!preventAutoLoad) {
+        loadDlReport();
+      } else {
+        loadDlReport();
+      }
+    };
+
+    window.loadDlReport = function() {
+      const selector = document.getElementById("dl-report-selector");
+      if (!selector) return;
+
+      const selected = selector.value;
+      const type = currentDlViewType;
+
+      const tbody = document.getElementById("dl-data-tbody");
+      const metricsRow = document.getElementById("dl-metrics-row");
+      
+      let primaryUrl = "";
+      let fallbackUrl = "";
+      
+      if (selected === "all") {
+        primaryUrl = "https://raw.githubusercontent.com/doheecho/market-report/main/data/master/master_all.json";
+        fallbackUrl = "https://raw.githubusercontent.com/doheecho/my-market-intelligence/main/data/master/master_all.json";
+        
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-primary py-5 fw-bold" style="background: var(--srm-surface) !important;">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                깃허브 데이터 레이크에서 [master/master_all.json] 전체 시황 원장 페칭 중...
+              </td>
+            </tr>
+          `;
+        }
+      } else {
+        primaryUrl = `https://raw.githubusercontent.com/doheecho/market-report/main/data/views/by_${type}/${selected}.json`;
+        fallbackUrl = `https://raw.githubusercontent.com/doheecho/my-market-intelligence/main/data/views/by_${type}/${selected}.json`;
+        
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-primary py-5 fw-bold" style="background: var(--srm-surface) !important;">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                깃허브 데이터 레이크에서 [by_${type}/${selected}.json] 리포트 페칭 중...
+              </td>
+            </tr>
+          `;
+        }
+      }
+      if (metricsRow) metricsRow.style.display = "none";
+
+      function processData(records) {
+        // Sort chronologically (most recent first)
+        records.sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          return b.month - a.month;
+        });
+
+        window.__DL_CURRENT_RECORDS = records;
+        
+        // Show Metrics
+        const total = records.length;
+        const high = records.filter(r => r.risk_level === "High").length;
+        const medium = records.filter(r => r.risk_level === "Medium").length;
+        const low = records.filter(r => r.risk_level === "Low").length;
+
+        document.getElementById("dl-metric-total").innerText = `${total}건`;
+        document.getElementById("dl-metric-high").innerText = `${high}건`;
+        document.getElementById("dl-metric-medium").innerText = `${medium}건`;
+        document.getElementById("dl-metric-low").innerText = `${low}건`;
+
+        if (metricsRow) metricsRow.style.display = "flex";
+
+        if (currentDlDisplayMode === 'table') {
+          renderDlTable(records);
+        } else {
+          renderDlTimeline(records);
+        }
+      }
+
+      fetch(primaryUrl)
+        .then(response => {
+          if (!response.ok) throw new Error("Primary fetch failed");
+          return response.json();
+        })
+        .then(data => {
+          processData(data);
+        })
+        .catch(err => {
+          console.log("Primary URL failed, trying fallback...", err);
+          fetch(fallbackUrl)
+            .then(resFallback => {
+              if (!resFallback.ok) throw new Error("Fallback fetch failed too");
+              return resFallback.json();
+            })
+            .then(fallbackData => {
+              processData(fallbackData);
+            })
+            .catch(finalErr => {
+              if (tbody) {
+                tbody.innerHTML = `
+                  <tr>
+                    <td colspan="6" class="text-danger py-5 fw-bold" style="background: var(--srm-surface) !important;">
+                      <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                      데이터 페칭 실패: 양대 레포지토리(market-report, my-market-intelligence)에서 해당 리포트를 찾을 수 없거나 네트워크 오류입니다.
+                    </td>
+                  </tr>
+                `;
+              }
+            });
+        });
+    };
+
+    window.renderDlTable = function(records) {
+      const tbody = document.getElementById("dl-data-tbody");
+      if (!tbody) return;
+
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-muted py-5" style="background: var(--srm-surface) !important;">조건에 부합하는 시황 데이터 레코드가 없습니다.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = records.map(r => {
+        let riskBadge = `<span class="badge bg-secondary" style="font-size: 11px;">Low</span>`;
+        if (r.risk_level === "High") {
+          riskBadge = `<span class="badge bg-danger" style="background-color: #be123c !important; font-size: 11px; padding: 4px 8px;">High</span>`;
+        } else if (r.risk_level === "Medium") {
+          riskBadge = `<span class="badge bg-warning text-dark" style="background-color: #f59e0b !important; font-size: 11px; padding: 4px 8px;">Medium</span>`;
+        }
+
+        const vendorTags = (r.detected_vendors || []).map(v => 
+          `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px; margin-bottom: 2px;">${escapeHtml(v)}</span>`
+        ).join("");
+
+        // 연관 품목 다중 뱃지 그리기 (detected_categories가 배열로 들어있으면 맵핑, 없으면 main category 백업)
+        const catsHtml = (r.detected_categories || [r.category || "기타"]).map(c => {
+          let badgeClass = "bg-secondary";
+          if (c === "IC") badgeClass = "bg-primary";
+          else if (c === "Memory") badgeClass = "bg-info text-dark";
+          else if (c === "Storage") badgeClass = "bg-success";
+          else if (c === "PCB") badgeClass = "bg-dark";
+          return `<span class="badge ${badgeClass} me-1" style="font-size: 10px; margin-bottom: 2px;">${escapeHtml(c)}</span>`;
+        }).join("");
+
+        const formattedDate = `${r.year}년 ${r.month}월`;
+
+        return `
+          <tr>
+            <td style="font-variant-numeric: tabular-nums; font-weight: 600;">${formattedDate}</td>
+            <td class="text-start ps-3 text-secondary fw-semibold">${escapeHtml(r.subheading || '-')}</td>
+            <td>${riskBadge}</td>
+            <td class="text-start ps-3 py-2" style="white-space: normal; line-height: 1.45; vertical-align: top;">${escapeHtml(r.text)}</td>
+            <td class="py-2" style="white-space: normal; vertical-align: middle;">${catsHtml || '<span class="text-muted">-</span>'}</td>
+            <td class="py-2" style="white-space: normal; vertical-align: middle;">${vendorTags || '<span class="text-muted">-</span>'}</td>
+          </tr>
+        `;
+      }).join("");
+    };
+
+    window.filterDlTable = function() {
+      const input = document.getElementById("dl-search-input");
+      if (!input) return;
+
+      const text = input.value.trim().toLowerCase();
+      if (!text) {
+        if (currentDlDisplayMode === 'table') {
+          renderDlTable(window.__DL_CURRENT_RECORDS);
+        } else {
+          renderDlTimeline(window.__DL_CURRENT_RECORDS);
+        }
+
+        // Restore metrics
+        const total = window.__DL_CURRENT_RECORDS.length;
+        const high = window.__DL_CURRENT_RECORDS.filter(r => r.risk_level === "High").length;
+        const medium = window.__DL_CURRENT_RECORDS.filter(r => r.risk_level === "Medium").length;
+        const low = window.__DL_CURRENT_RECORDS.filter(r => r.risk_level === "Low").length;
+        document.getElementById("dl-metric-total").innerText = `${total}건`;
+        document.getElementById("dl-metric-high").innerText = `${high}건`;
+        document.getElementById("dl-metric-medium").innerText = `${medium}건`;
+        document.getElementById("dl-metric-low").innerText = `${low}건`;
+        return;
+      }
+
+      const filtered = window.__DL_CURRENT_RECORDS.filter(r => {
+        // If query is a short acronym, use exact word boundary regex search in raw text
+        const queryIsShort = (text === "ti" || text === "adi" || text === "wd" || text === "nxp" || text === "stm" || text === "tsmc");
+        let matchText = false;
+        if (queryIsShort) {
+          const regex = new RegExp("\\b" + text + "\\b", "i");
+          matchText = regex.test(r.text);
+        } else {
+          matchText = (r.text || "").toLowerCase().includes(text);
+        }
+
+        const matchSub = (r.subheading || "").toLowerCase().includes(text);
+        const matchCat = (r.category || "").toLowerCase().includes(text);
+        const matchVendors = (r.detected_vendors || []).some(v => v.toLowerCase().includes(text));
+        const matchKeywords = (r.detected_keywords || []).some(kw => kw.toLowerCase().includes(text));
+        return matchText || matchSub || matchCat || matchVendors || matchKeywords;
+      });
+
+      // Update metrics for the filtered result on-the-fly!
+      const total = filtered.length;
+      const high = filtered.filter(r => r.risk_level === "High").length;
+      const medium = filtered.filter(r => r.risk_level === "Medium").length;
+      const low = filtered.filter(r => r.risk_level === "Low").length;
+      document.getElementById("dl-metric-total").innerText = `${total}건`;
+      document.getElementById("dl-metric-high").innerText = `${high}건`;
+      document.getElementById("dl-metric-medium").innerText = `${medium}건`;
+      document.getElementById("dl-metric-low").innerText = `${low}건`;
+
+      if (currentDlDisplayMode === 'table') {
+        renderDlTable(filtered);
+      } else {
+        renderDlTimeline(filtered);
+      }
+    };
+
+
+     let currentDlDisplayMode = 'table'; // 'table' or 'timeline'
+
+     window.setDlDisplayMode = function(mode) {
+       currentDlDisplayMode = mode;
+       const btnTable = document.getElementById("btn-dl-mode-table");
+       const btnTimeline = document.getElementById("btn-dl-mode-timeline");
+       
+       if (mode === 'table') {
+         btnTable.className = "btn btn-sm btn-primary py-1 px-3";
+         btnTable.style.removeProperty("background");
+         btnTable.style.removeProperty("color");
+         btnTable.style.removeProperty("border");
+         
+         btnTimeline.className = "btn btn-sm btn-outline-secondary py-1 px-3";
+         btnTimeline.style.background = "transparent";
+         btnTimeline.style.border = "none";
+         btnTimeline.style.color = "var(--srm-text-muted)";
+         
+         document.getElementById("dl-table-wrapper").style.display = "block";
+         document.getElementById("dl-timeline-wrapper").style.display = "none";
+         renderDlTable(window.__DL_CURRENT_RECORDS);
+       } else {
+         btnTimeline.className = "btn btn-sm btn-primary py-1 px-3";
+         btnTimeline.style.removeProperty("background");
+         btnTimeline.style.removeProperty("color");
+         btnTimeline.style.removeProperty("border");
+         
+         btnTable.className = "btn btn-sm btn-outline-secondary py-1 px-3";
+         btnTable.style.background = "transparent";
+         btnTable.style.border = "none";
+         btnTable.style.color = "var(--srm-text-muted)";
+         
+         document.getElementById("dl-table-wrapper").style.display = "none";
+         document.getElementById("dl-timeline-wrapper").style.display = "block";
+         renderDlTimeline(window.__DL_CURRENT_RECORDS);
+       }
+     };
+
+     window.renderDlTimeline = function(records) {
+       const container = document.getElementById("dl-timeline-content");
+       if (!container) return;
+       
+       if (!records || records.length === 0) {
+         container.innerHTML = `<div class="text-muted text-center py-5">조건에 부합하는 SCM 시황 이력이 없습니다.</div>`;
+         return;
+       }
+       
+       // Sort records chronologically (year/month ascending)
+       const sorted = [...records].sort((a, b) => (a.year - b.year) || (a.month - b.month));
+       
+       container.innerHTML = sorted.map((r, idx) => {
+         const formattedDate = `${r.year}년 ${r.month}월`;
+         
+         let markerColor = "var(--srm-accent)";
+         if (r.risk_level === "High") markerColor = "#be123c";
+         else if (r.risk_level === "Medium") markerColor = "#f59e0b";
+         
+         let summary = r.subheading || "";
+         if (summary) {
+           summary = summary.replace(/^\d+[\s\.\,\-\_]*/, "");
+         } else {
+           summary = r.text.split(".")[0] + ".";
+           summary = summary.replace(/^\d+[\s\.\,\-\_]*/, "");
+         }
+         
+         const vendors = (r.detected_vendors || []).map(v => 
+           `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">${escapeHtml(v)}</span>`
+         ).join("");
+         
+         const categories = (r.detected_categories || [r.category || "기타"]).map(c => {
+           let badgeClass = "bg-secondary";
+           if (c === "IC") badgeClass = "bg-primary";
+           else if (c === "Memory") badgeClass = "bg-info text-dark";
+           else if (c === "Storage") badgeClass = "bg-success";
+           else if (c === "PCB") badgeClass = "bg-dark";
+           return `<span class="badge ${badgeClass} me-1" style="font-size: 10px;">${escapeHtml(c)}</span>`;
+         }).join("");
+         
+         const uniqId = `timeline-text-${idx}`;
+         
+         return `
+           <div class="timeline-item" style="position: relative; margin-bottom: 24px; padding-left: 24px;">
+             <div class="timeline-marker" style="position: absolute; left: -9px; top: 4px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--srm-surface); box-shadow: 0 0 0 2px ${markerColor}; background: ${markerColor}; transition: all 0.2s ease;"></div>
+             <div class="timeline-card" style="background: var(--srm-surface-2) !important; border: 1px solid var(--srm-border); border-radius: 12px; padding: 14px 18px; box-shadow: var(--srm-shadow-sm); text-align: left;">
+               <div class="timeline-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                 <span class="timeline-date" style="font-size: 0.85rem; font-weight: 700; color: var(--srm-accent); font-variant-numeric: tabular-nums;">${formattedDate}</span>
+                 <div>
+                   ${categories}
+                   ${vendors}
+                 </div>
+               </div>
+               <div class="timeline-summary" style="font-weight: 700; font-size: 0.95rem; color: var(--srm-text); margin-bottom: 4px; cursor: pointer;" onclick="toggleTimelineCollapse('${uniqId}')">
+                 <i class="bi bi-caret-right-fill me-1" id="icon-${uniqId}"></i> ${escapeHtml(summary)}
+               </div>
+               <div id="${uniqId}" class="timeline-text" style="font-size: 0.82rem; color: var(--srm-text-secondary); line-height: 1.55; display: none; margin-top: 10px; border-top: 1px dashed var(--srm-border); padding-top: 10px; white-space: normal;">
+                 ${escapeHtml(r.text)}
+               </div>
+             </div>
+           </div>
+         `;
+       }).join("");
+     };
+     
+     window.toggleTimelineCollapse = function(id) {
+       const el = document.getElementById(id);
+       const icon = document.getElementById("icon-" + id);
+       if (el) {
+         if (el.style.display === "none") {
+           el.style.display = "block";
+           icon.className = "bi bi-caret-down-fill me-1";
+         } else {
+           el.style.display = "none";
+           icon.className = "bi bi-caret-right-fill me-1";
+         }
+       }
+     };
 
     document.addEventListener('DOMContentLoaded', initialize);
     
