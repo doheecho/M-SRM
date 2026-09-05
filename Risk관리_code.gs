@@ -2,7 +2,7 @@
  * SCM Risk관리_Code.gs  ·  지정학적 SCM Map Risk 대시보드 백엔드 (G.A.S V8)
  * ---------------------------------------------------------------------
  * 이 파일은 통합_common.gs 공용 헬퍼와 바인딩되어 동작합니다.
- * SCM Map 및 Risk분류 마스터 구글 시트 데이터베이스와 결합하여
+ * SCM Map 및 지정학적Risk 마스터 구글 시트 데이터베이스와 결합하여
  * 초고속 지정학적 구매 조달 리스크 센싱 시각화를 선사합니다.
  * ===================================================================== */
 
@@ -25,34 +25,109 @@ function include(filename) {
 }
 
 /**
- * 지정학적 SCM Map 및 Risk분류 교차 매핑 데이터를 수합하여 반환하는 핵심 API
+ * 유저 캐시(getUserCache) 청크 방식 로딩용 헬퍼 함수
  */
-function getScmRiskData() {
+function getScmFromCache_(baseKey) {
   try {
+    const cache = CacheService.getUserCache();
+    const chunkCount = cache.get(baseKey + "_COUNT");
+    if (!chunkCount) return null;
+    let fullString = "";
+    for (let i = 0; i < parseInt(chunkCount); i++) {
+      const chunk = cache.get(baseKey + "_" + i);
+      if (!chunk) return null;
+      fullString += chunk;
+    }
+    return JSON.parse(fullString);
+  } catch (e) {
+    Logger.log("Cache read error for " + baseKey + ": " + e.message);
+    return null;
+  }
+}
+
+/**
+ * 유저 캐시(getUserCache) 청크 방식 저장용 헬퍼 함수
+ */
+function putScmToCache_(baseKey, dataObj) {
+  try {
+    const cache = CacheService.getUserCache();
+    const jsonString = JSON.stringify(dataObj);
+    const chunks = jsonString.match(/.{1,90000}/g) || [];
+    for (let i = 0; i < chunks.length; i++) {
+      cache.put(baseKey + "_" + i, chunks[i], 21600); // 6시간 동안 보존
+    }
+    cache.put(baseKey + "_COUNT", chunks.length.toString(), 21600);
+  } catch (e) {
+    Logger.log("Cache write error for " + baseKey + ": " + e.message);
+  }
+}
+
+/**
+ * SCM 지정학 캐시를 강제로 비우고 신규 원본을 적재하는 클리어 함수
+ */
+function clearScmRiskCache() {
+  try {
+    const cache = CacheService.getUserCache();
+    const CACHE_KEY = "SCM_RISK_DATA_CACHE_KEY_V1";
+    const count = cache.get(CACHE_KEY + "_COUNT");
+    if (count) {
+      for (let i = 0; i < parseInt(count); i++) {
+        cache.remove(CACHE_KEY + "_" + i);
+      }
+      cache.remove(CACHE_KEY + "_COUNT");
+    }
+  } catch (e) {
+    Logger.log("Cache clear error for SCM: " + e.message);
+  }
+  return getScmRiskData(true); // force reload fresh data
+}
+
+/**
+ * 지정학적 SCM Map 및 지정학적Risk 교차 매핑 데이터를 수합하여 반환하는 핵심 API (캐싱 지원)
+ */
+function getScmRiskData(forceReload) {
+  try {
+    const CACHE_KEY = "SCM_RISK_DATA_CACHE_KEY_V1";
+    
+    // 강제 갱신이 아닌 경우 캐시 데이터 존재 유무를 확인해 즉시 초고속 리턴!
+    if (!forceReload) {
+      const cached = getScmFromCache_(CACHE_KEY);
+      if (cached) {
+        Logger.log("SCM 지정학 대시보드 데이터 캐시 적재 성공!");
+        return cached;
+      }
+    }
+
     let mapLocations = [];
     let allScmLocations = [];
     let riskStats = [];
     
-    // 1) SCM Risk 관리 시트의 'Risk분류' B4:D 읽기 (B는 Name, C는 Level, D는 Description)
+    // 1) SCM Risk 관리 시트의 '지정학적Risk' B4:F 읽기 (B는 Name, C는 Level, D는 Description, E는 Target Country, F는 Risk Type)
     const riskSs = SpreadsheetApp.openById("1mrMQ7B09ubu_5agloTKMZV_tjQbN0tHzUezEIMMuVko");
-    const classSheet = riskSs.getSheetByName("Risk분류");
+    const classSheet = riskSs.getSheetByName("지정학적Risk");
     let activeRisks = [];
     let riskLevelMap = {};
-    let riskDescMap = {}; // Risk 설명 매핑 딕셔너리 신설!
+    let riskDescMap = {}; 
+    let riskCountryMap = {}; // E열 대상 국가 매핑 추가!
+    let riskTypeMap = {}; // F열 시뮬레이션 유형 매핑 추가!
     
     if (classSheet) {
       const lastClassRow = classSheet.getLastRow();
       if (lastClassRow >= 4) {
-        // column B (col 2)부터 column D (col 4)까지 3개 컬럼을 인출 (Name, Level, Description)
-        const classValues = classSheet.getRange(4, 2, lastClassRow - 3, 3).getValues();
+        // column B (col 2)부터 column F (col 6)까지 5개 컬럼을 인출 (Name, Level, Description, Country, TypeText)
+        const classValues = classSheet.getRange(4, 2, lastClassRow - 3, 5).getValues();
         classValues.forEach(r => {
           const name = String(r[0]).trim();
           const level = String(r[1]).trim(); // '상', '중', '하'
           const desc = String(r[2] || '').trim();  // Risk Description!
+          const country = String(r[3] || '').trim(); // Target Country (E열)
+          const typeText = String(r[4] || '').trim(); // Risk Type (F열)
           if (name) {
             activeRisks.push(name);
             riskLevelMap[name] = level || '하'; // 기본은 '하'로 세팅
             riskDescMap[name] = desc;
+            riskCountryMap[name] = country;
+            riskTypeMap[name] = typeText;
           }
         });
       }
@@ -97,7 +172,7 @@ function getScmRiskData() {
           }
           const typeCombined = typeVals.join(", ");
           
-          const riskStr = String(row[13] || '').trim(); // O열은 index 13
+          const riskStr = String(row[13] || '').trim(); // O열 is index 13
           
           // 지진 시뮬레이션용: Risk 분류 여부와 관계없이 실질 좌표가 있는 모든 SCM Location 수합
           if (!isNaN(lat) && !isNaN(lon)) {
@@ -121,7 +196,7 @@ function getScmRiskData() {
           // 이 행의 Risk 테마들 추출 (# 단위 파싱)
           const rowThemes = riskStr.split('#').map(t => t.trim()).filter(Boolean);
           
-          // Risk분류의 액티브 Risk들과 교차 대조
+          // 지정학적Risk의 액티브 Risk들과 교차 대조
           rowThemes.forEach(t => {
             if (statsMap[t] && !isNaN(lat) && !isNaN(lon)) {
               if (vendor && vendor !== '-' && vendor !== '미분류') statsMap[t].vendors.add(vendor);
@@ -153,7 +228,9 @@ function getScmRiskData() {
             riskStats.push({
               name: r,
               level: riskLevelMap[r] || '하', // '상', '중', '하' 이식
-              desc: riskDescMap[r] || '',     // Risk분류 D열 Description 결합 반환!
+              desc: riskDescMap[r] || '',     // 지정학적Risk D열 Description 결합 반환!
+              country: riskCountryMap[r] || '', // E열 추가!
+              typeText: riskTypeMap[r] || '', // F열 추가!
               vendorCount: entry.vendors.size,
               cityCount: entry.cities.size,
               itemGroupCount: entry.itemGroups.size,
@@ -166,7 +243,7 @@ function getScmRiskData() {
     
     const context = SRM_getUserContext_();
     
-    return {
+    const resultObj = {
       success: true,
       mapLocations: mapLocations, // 지정학 탭 지도용 교차 마커 리스트 반환
       allScmLocations: allScmLocations, // 지진 시뮬레이션용 전체 마커 리스트 반환
@@ -175,6 +252,11 @@ function getScmRiskData() {
       userName: context.name,
       userDept: context.text || context.dept
     };
+    
+    // 새로 읽어온 데이터 세트를 유저 캐시에 고밀도 이중 적재
+    putScmToCache_(CACHE_KEY, resultObj);
+    
+    return resultObj;
   } catch (e) {
     return { success: false, message: e.toString() };
   }
