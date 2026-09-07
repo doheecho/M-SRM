@@ -536,17 +536,69 @@
       font-size: 0.95rem;
       color: var(--srm-text);
       margin-bottom: 4px;
-      cursor: pointer;
     }
     .timeline-text {
       font-size: 0.82rem;
       color: var(--srm-text-secondary);
       line-height: 1.55;
-      display: none; /* Collapsed by default, expand on click! */
+      display: block; /* [수정] 클릭해서 펼치는 방식이 아니라 처음부터 항상 전체 내용 표시 */
       margin-top: 10px;
       border-top: 1px dashed var(--srm-border);
       padding-top: 10px;
       white-space: normal;
+    }
+
+    /* ===== [신설] 주요 타임라인 (테마별 좌→우 가로 스크롤 타임라인) ===== */
+    .major-timeline-lane {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--srm-border);
+    }
+    .major-timeline-lane:last-child { border-bottom: none; }
+    .major-timeline-lane-label {
+      flex-shrink: 0;
+      width: 140px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: var(--srm-text);
+    }
+    .major-timeline-track {
+      flex-grow: 1;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 4px 2px;
+    }
+    .major-timeline-node {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-right: 18px;
+      cursor: pointer;
+      vertical-align: top;
+    }
+    .major-timeline-node .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--srm-surface);
+      box-shadow: 0 0 0 2px var(--srm-border);
+      transition: all 0.15s ease;
+    }
+    .major-timeline-node:hover .dot,
+    .major-timeline-node.is-active .dot {
+      transform: scale(1.25);
+    }
+    .major-timeline-node.is-active .dot {
+      box-shadow: 0 0 0 2px var(--srm-accent);
+    }
+    .major-timeline-node .node-label {
+      font-size: 0.68rem;
+      color: var(--srm-text-secondary);
+      font-weight: 600;
+      white-space: nowrap;
     }
     
   </style>
@@ -762,42 +814,54 @@
           <span><i class="bi bi-truck me-1"></i>시장 동향 Report 조회</span>
         </h3>
         
-        <!-- Controls: Segmented Control & Dropdown & Search -->
-        <div class="p-3 border rounded shadow-sm mb-3" style="background: var(--srm-surface) !important; border: 1.5px solid var(--srm-border) !important; border-radius: 12px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-          
-          <!-- View Type Segmented Control -->
+        <!-- [수정] 컨트롤 영역: 기존 '조회 기준(택1) + 세부분류 드롭다운' 방식을 버리고,
+             테마/품목군/제조사 3개 필터를 항상 동시에 노출. 각 필터는 복수선택 가능하며,
+             3개 필터 모두를 동시에 만족(AND)하는 데이터만 표시. 자세한 로직은 하단 JS의
+             computeDlFilteredRecords() 참고. -->
+        <div class="p-3 border rounded shadow-sm mb-3" style="background: var(--srm-surface) !important; border: 1.5px solid var(--srm-border) !important; border-radius: 12px; display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;">
+
+          <!-- 테마 필터 (복수선택) -->
           <div class="d-flex flex-column gap-1">
-            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">Report 조회 기준:</span>
-            <div id="dl-view-type-group" class="d-flex gap-1" style="background: var(--srm-surface-2) !important; padding: 3px; border-radius: 8px;">
-              <button type="button" class="btn btn-sm btn-primary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600;" onclick="switchDlViewType('theme')">Theme (테마별)</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; background: transparent; color: var(--srm-text-muted);" onclick="switchDlViewType('category')">Category (품목군별)</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; background: transparent; color: var(--srm-text-muted);" onclick="switchDlViewType('vendor')">Vendor (제조사별)</button>
+            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">테마 필터:</span>
+            <div class="dropdown">
+              <button type="button" id="dl-filter-theme-btn" class="btn btn-sm btn-outline-secondary dropdown-toggle fw-bold" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="height: 32px; font-size: 0.8rem; min-width: 130px; text-align: left;">전체</button>
+              <ul class="dropdown-menu p-2" id="dl-filter-theme-menu" style="max-height: 260px; overflow-y: auto; min-width: 230px;"></ul>
             </div>
           </div>
-          
-          <!-- Target Selector Dropdown -->
-          <div class="d-flex flex-column gap-1" style="min-width: 280px;">
-            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">세부분류 선택:</span>
-            <select id="dl-report-selector" class="form-select fw-bold" style="height: 32px; padding: 4px 12px; font-size: 0.85rem;" onchange="loadDlReport()">
-              <!-- Dynamically populated -->
-            </select>
+
+          <!-- 품목군 필터 (복수선택) -->
+          <div class="d-flex flex-column gap-1">
+            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">품목군 필터:</span>
+            <div class="dropdown">
+              <button type="button" id="dl-filter-category-btn" class="btn btn-sm btn-outline-secondary dropdown-toggle fw-bold" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="height: 32px; font-size: 0.8rem; min-width: 130px; text-align: left;">전체</button>
+              <ul class="dropdown-menu p-2" id="dl-filter-category-menu" style="max-height: 260px; overflow-y: auto; min-width: 200px;"></ul>
+            </div>
           </div>
 
-          <!-- [신설] 표시 모드 토글 (테이블 뷰 vs 타임라인 이력 뷰) -->
+          <!-- 제조사 필터 (복수선택) -->
+          <div class="d-flex flex-column gap-1">
+            <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">제조사 필터:</span>
+            <div class="dropdown">
+              <button type="button" id="dl-filter-vendor-btn" class="btn btn-sm btn-outline-secondary dropdown-toggle fw-bold" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="height: 32px; font-size: 0.8rem; min-width: 130px; text-align: left;">전체</button>
+              <ul class="dropdown-menu p-2" id="dl-filter-vendor-menu" style="max-height: 260px; overflow-y: auto; min-width: 230px;"></ul>
+            </div>
+          </div>
+
+          <!-- 표시 모드 토글 (테이블 뷰 vs 상세 리스트 뷰) -->
           <div class="d-flex flex-column gap-1">
             <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">표시 모드:</span>
             <div id="dl-display-mode-group" class="d-flex gap-1" style="background: var(--srm-surface-2) !important; padding: 3px; border-radius: 8px;">
               <button type="button" id="btn-dl-mode-table" class="btn btn-sm btn-primary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600;" onclick="setDlDisplayMode('table')">📊 테이블</button>
-              <button type="button" id="btn-dl-mode-timeline" class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; background: transparent; color: var(--srm-text-muted);" onclick="setDlDisplayMode('timeline')">📅 타임라인 이력</button>
+              <button type="button" id="btn-dl-mode-detail" class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; background: transparent; color: var(--srm-text-muted);" onclick="setDlDisplayMode('detail')">📋 상세 리스트</button>
             </div>
           </div>
 
-          <!-- Free text Search input inside the report -->
-          <div class="d-flex flex-column gap-1" style="min-width: 250px; flex-grow: 1;">
+          <!-- [수정] 텍스트 검색: 필터 영역 확보를 위해 flex-grow를 없애고 폭을 최소화 -->
+          <div class="d-flex flex-column gap-1" style="min-width: 150px; max-width: 180px;">
             <span class="small fw-bold text-secondary" style="font-size: 0.75rem;">텍스트 검색:</span>
             <div class="input-group input-group-sm">
               <span class="input-group-text" style="height: 32px;"><i class="bi bi-search"></i></span>
-              <input type="text" id="dl-search-input" class="form-control" placeholder="검색할 키워드나 벤더명을 입력하세요..." style="height: 32px;" oninput="filterDlTable()">
+              <input type="text" id="dl-search-input" class="form-control" placeholder="검색어..." style="height: 32px;" oninput="filterDlTable()">
             </div>
           </div>
         </div>
@@ -845,18 +909,29 @@
             </thead>
             <tbody id="dl-data-tbody">
               <tr>
-                <td colspan="6" class="text-muted py-5" style="background: var(--srm-surface) !important;">상단의 조회 기준과 리포트를 선택하여 깃허브 시황 정보를 확인하세요.</td>
+                <td colspan="6" class="text-muted py-5" style="background: var(--srm-surface) !important;">위 필터 조건에 맞는 깃허브 시황 정보를 확인하세요.</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- [신설] SCM Chronological Timeline Wrapper -->
-        <div id="dl-timeline-wrapper" style="display: none; height: 520px; overflow-y: auto; padding: 25px 30px; background: var(--srm-surface) !important; border: 1px solid var(--srm-border); border-radius: 12px;">
-          <div id="dl-timeline-content" style="position: relative; margin-left: 20px; border-left: 2px solid var(--srm-border); padding-bottom: 10px;">
+        <!-- 상세 리스트 뷰: 클릭해서 펼치지 않아도 본문 전체가 항상 표시됨 -->
+        <div id="dl-detail-wrapper" style="display: none; height: 520px; overflow-y: auto; padding: 25px 30px; background: var(--srm-surface) !important; border: 1px solid var(--srm-border); border-radius: 12px;">
+          <div id="dl-detail-content" style="position: relative; margin-left: 20px; border-left: 2px solid var(--srm-border); padding-bottom: 10px;">
             <!-- Loaded dynamically -->
           </div>
         </div>
+      </section>
+
+      <!-- 5-1. [신설] 주요 타임라인: 테마별 이슈 발생 추이를 좌→우 가로 스크롤 타임라인으로 표시.
+           각 점(노드)을 클릭하면 아래에 해당 시기·테마의 제조사(품목)별 이슈 상세가 펼쳐짐. -->
+      <section class="block mb-4" id="major-timeline-block" style="display: none; margin-top: 16px;">
+        <h3><span><i class="bi bi-signpost-split-fill me-1"></i>주요 타임라인</span></h3>
+        <div id="major-timeline-loading" class="text-center text-muted py-4" style="font-size: 0.85rem;">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>주요 테마별 타임라인 로딩 중…
+        </div>
+        <div id="major-timeline-lanes" style="display: none;"></div>
+        <div id="major-timeline-detail" style="display: none; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--srm-border);"></div>
       </section>
 
       <!-- 6. 실시간 SCM 모듈별 주석 (Comments) - 제목/테두리 없이 깔끔하게 좌하단에 배치 -->
@@ -1308,6 +1383,7 @@
       const splitRow = document.getElementById("market-tables-split-row");
       const partnersBlock = document.getElementById("market-risk-partners-block");
       const procurementBlock = document.getElementById("procurement-risk-block");
+      const majorTimelineBlock = document.getElementById("major-timeline-block");
 
       // Hide all panels initially
       mapBlock.style.display = "none";
@@ -1315,6 +1391,7 @@
       splitRow.style.display = "none";
       partnersBlock.style.display = "none";
       if (procurementBlock) procurementBlock.style.display = "none";
+      if (majorTimelineBlock) majorTimelineBlock.style.display = "none";
 
       if (category === "통합 관리") {
         mapBlock.style.display = "block";
@@ -1372,6 +1449,9 @@
           if (typeof window.initDlViewModule === 'function') {
             window.initDlViewModule();
           }
+        }
+        if (majorTimelineBlock) {
+          majorTimelineBlock.style.display = "block";
         }
       }
 
@@ -4228,157 +4308,176 @@
       ]
     };
 
-    let currentDlViewType = 'theme';
     window.__DL_CURRENT_RECORDS = [];
 
+    // [수정] 기존 '조회 기준(택1) + 세부분류 단일선택' 상태값(currentDlViewType) 대신,
+    // 테마/품목군/제조사 3개 차원을 동시에 유지하는 복수선택 필터 상태로 교체.
+    window.__DL_SELECTED = { theme: [], category: [], vendor: [] };
+
+    // 동일 원격 JSON을 반복 요청하지 않도록 URL 단위로 캐시 (Promise 자체를 캐싱해
+    // 같은 파일에 대한 동시 요청도 하나로 합쳐짐)
+    window.__DL_FILE_CACHE = {};
+
+    // 원격 JSON을 기본 저장소 → 실패 시 폴백 저장소 순으로 가져오는 공용 헬퍼.
+    // (원본 loadDlReport() 안에 있던 fetch + fallback 로직을 재사용 가능한 함수로 분리)
+    function fetchJsonWithFallback(primaryUrl, fallbackUrl) {
+      if (window.__DL_FILE_CACHE[primaryUrl]) return window.__DL_FILE_CACHE[primaryUrl];
+      const p = fetch(primaryUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("primary fetch failed");
+          return res.json();
+        })
+        .catch(() => fetch(fallbackUrl).then(res => {
+          if (!res.ok) throw new Error("fallback fetch failed");
+          return res.json();
+        }));
+      window.__DL_FILE_CACHE[primaryUrl] = p;
+      return p;
+    }
+
+    function dlFileUrls(dim, value) {
+      if (dim === 'all') {
+        return {
+          primary: "https://raw.githubusercontent.com/doheecho/market-report/main/data/master/master_all.json",
+          fallback: "https://raw.githubusercontent.com/doheecho/my-market-intelligence/main/data/master/master_all.json"
+        };
+      }
+      return {
+        primary: `https://raw.githubusercontent.com/doheecho/market-report/main/data/views/by_${dim}/${value}.json`,
+        fallback: `https://raw.githubusercontent.com/doheecho/my-market-intelligence/main/data/views/by_${dim}/${value}.json`
+      };
+    }
+
+    function fetchDimensionValueRecords(dim, value) {
+      const { primary, fallback } = dlFileUrls(dim, value);
+      return fetchJsonWithFallback(primary, fallback);
+    }
+
+    // ── 테마 / 품목군 / 제조사 3개 필터 드롭다운(복수선택) 초기화 ───────────
     window.initDlViewModule = function() {
-      switchDlViewType(currentDlViewType, true);
+      buildDlFilterMenu('theme', DL_REPORTS.theme);
+      buildDlFilterMenu('category', DL_REPORTS.category);
+      buildDlFilterMenu('vendor', DL_REPORTS.vendor);
+      updateDlFilterButtonLabel('theme');
+      updateDlFilterButtonLabel('category');
+      updateDlFilterButtonLabel('vendor');
+      applyDlFilters();
+      window.loadMajorTimeline();
     };
 
-    window.switchDlViewType = function(type, preventAutoLoad) {
-      currentDlViewType = type;
-      
-      // Update segmented buttons
-      const group = document.getElementById("dl-view-type-group");
-      if (group) {
-        group.querySelectorAll("button").forEach(btn => {
-          if (btn.getAttribute("onclick").includes(`'${type}'`)) {
-            btn.className = "btn btn-sm btn-primary py-1 px-3";
-            btn.style.removeProperty("background");
-            btn.style.removeProperty("color");
-            btn.style.removeProperty("border");
-          } else {
-            btn.className = "btn btn-sm btn-outline-secondary py-1 px-3";
-            btn.style.background = "transparent";
-            btn.style.border = "none";
-            btn.style.color = "var(--srm-text-muted)";
-          }
-        });
-      }
+    function buildDlFilterMenu(dim, options) {
+      const menu = document.getElementById(`dl-filter-${dim}-menu`);
+      if (!menu) return;
+      const selected = window.__DL_SELECTED[dim];
+      // 체크박스 클릭 시 드롭다운이 바로 닫히지 않도록 stopPropagation, 여러 개를
+      // 연달아 체크/해제할 수 있게 함 (버튼에는 data-bs-auto-close="outside" 적용됨)
+      menu.innerHTML = options.map(opt => `
+        <li>
+          <label class="dropdown-item d-flex align-items-center gap-2 mb-0" style="cursor:pointer; font-size:0.82rem; font-weight:600;" onclick="event.stopPropagation();">
+            <input type="checkbox" class="form-check-input mt-0" value="${opt.value}" ${selected.includes(opt.value) ? 'checked' : ''} onchange="toggleDlFilterValue('${dim}', '${opt.value}', this.checked)">
+            <span>${escapeHtml(opt.label)}</span>
+          </label>
+        </li>
+      `).join("");
+    }
 
-      // Populate Selector with "All (전체)" prepended as the very first option!
-      const selector = document.getElementById("dl-report-selector");
-      if (selector) {
-        const allOption = `<option value="all">전체</option>`;
-        const otherOptions = DL_REPORTS[type].map(item => `<option value="${item.value}">${item.label}</option>`).join("");
-        selector.innerHTML = allOption + otherOptions;
-      }
-
-      // Clear search input
-      const searchInput = document.getElementById("dl-search-input");
-      if (searchInput) searchInput.value = "";
-
-      if (!preventAutoLoad) {
-        loadDlReport();
-      } else {
-        loadDlReport();
-      }
+    window.toggleDlFilterValue = function(dim, value, checked) {
+      const arr = window.__DL_SELECTED[dim];
+      const idx = arr.indexOf(value);
+      if (checked && idx === -1) arr.push(value);
+      if (!checked && idx !== -1) arr.splice(idx, 1);
+      updateDlFilterButtonLabel(dim);
+      applyDlFilters();
     };
 
-    window.loadDlReport = function() {
-      const selector = document.getElementById("dl-report-selector");
-      if (!selector) return;
+    function updateDlFilterButtonLabel(dim) {
+      const btn = document.getElementById(`dl-filter-${dim}-btn`);
+      if (!btn) return;
+      const n = window.__DL_SELECTED[dim].length;
+      btn.textContent = n === 0 ? "전체" : `${n}개 선택`;
+    }
 
-      const selected = selector.value;
-      const type = currentDlViewType;
+    // ── 3개 필터를 동시에(AND) 만족하는 레코드 집합 계산 ────────────────────
+    // 같은 차원(테마/품목군/제조사) 안에서 복수 선택은 OR(합집합)이고,
+    // 차원과 차원 사이는 AND(교집합)로 좁혀짐. 선택이 비어있는 차원은
+    // "전체"로 간주해 그 차원에서는 아무 제한도 걸지 않음.
+    // 동일한 원본 레코드가 서로 다른 view 파일(by_theme/by_category/by_vendor)에
+    // 중복 등장할 수 있으므로 JSON.stringify 값을 식별자 삼아 교집합/합집합 계산.
+    async function computeDlFilteredRecords() {
+      const dims = [
+        { key: 'theme', selected: window.__DL_SELECTED.theme },
+        { key: 'category', selected: window.__DL_SELECTED.category },
+        { key: 'vendor', selected: window.__DL_SELECTED.vendor }
+      ];
+      const activeDims = dims.filter(d => d.selected.length > 0);
 
+      if (activeDims.length === 0) {
+        return await fetchDimensionValueRecords('all', 'all');
+      }
+
+      const dimMaps = [];
+      for (const d of activeDims) {
+        const arrays = await Promise.all(d.selected.map(v => fetchDimensionValueRecords(d.key, v)));
+        const map = new Map();
+        arrays.forEach(arr => (arr || []).forEach(r => map.set(JSON.stringify(r), r)));
+        dimMaps.push(map);
+      }
+
+      let resultMap = dimMaps[0];
+      for (let i = 1; i < dimMaps.length; i++) {
+        const next = new Map();
+        resultMap.forEach((v, k) => { if (dimMaps[i].has(k)) next.set(k, v); });
+        resultMap = next;
+      }
+      return Array.from(resultMap.values());
+    }
+
+    // 3개 필터 상태를 기준으로 데이터를 다시 가져와 표/상세 리스트를 갱신.
+    // (원본 loadDlReport()를 대체 — 단일 파일 선택이 아니라 필터 조합 기반으로 동작)
+    window.applyDlFilters = async function() {
       const tbody = document.getElementById("dl-data-tbody");
       const metricsRow = document.getElementById("dl-metrics-row");
-      
-      let primaryUrl = "";
-      let fallbackUrl = "";
-      
-      if (selected === "all") {
-        primaryUrl = "https://raw.githubusercontent.com/doheecho/market-report/main/data/master/master_all.json";
-        fallbackUrl = "https://raw.githubusercontent.com/doheecho/my-market-intelligence/main/data/master/master_all.json";
-        
-        if (tbody) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="text-primary py-5 fw-bold" style="background: var(--srm-surface) !important;">
-                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                외부 서버에서 [master/master_all.json] 전체 시황 데이터를 불러오는 중...
-              </td>
-            </tr>
-          `;
-        }
-      } else {
-        primaryUrl = `https://raw.githubusercontent.com/doheecho/market-report/main/data/views/by_${type}/${selected}.json`;
-        fallbackUrl = `https://raw.githubusercontent.com/doheecho/my-market-intelligence/main/data/views/by_${type}/${selected}.json`;
-        
-        if (tbody) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="text-primary py-5 fw-bold" style="background: var(--srm-surface) !important;">
-                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                외부 서버에서 [by_${type}/${selected}.json] 시장 전망 리포트를 불러오는 중...
-              </td>
-            </tr>
-          `;
-        }
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-primary py-5 fw-bold" style="background: var(--srm-surface) !important;">
+              <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+              필터 조건에 맞는 시황 데이터를 불러오는 중...
+            </td>
+          </tr>
+        `;
       }
       if (metricsRow) metricsRow.style.display = "none";
 
-      function processData(records) {
-        // Sort chronologically (most recent first)
-        records.sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return b.month - a.month;
-        });
-
+      try {
+        const records = await computeDlFilteredRecords();
+        records.sort((a, b) => (b.year - a.year) || (b.month - a.month));
         window.__DL_CURRENT_RECORDS = records;
-        
-        // Show Metrics
+
         const total = records.length;
         const high = records.filter(r => r.risk_level === "High").length;
         const medium = records.filter(r => r.risk_level === "Medium").length;
         const low = records.filter(r => r.risk_level === "Low").length;
-
         document.getElementById("dl-metric-total").innerText = `${total}건`;
         document.getElementById("dl-metric-high").innerText = `${high}건`;
         document.getElementById("dl-metric-medium").innerText = `${medium}건`;
         document.getElementById("dl-metric-low").innerText = `${low}건`;
-
         if (metricsRow) metricsRow.style.display = "flex";
 
-        if (currentDlDisplayMode === 'table') {
-          renderDlTable(records);
-        } else {
-          renderDlTimeline(records);
+        // 텍스트 검색어가 이미 입력돼 있다면 그 조건까지 반영해서 다시 그려줌
+        filterDlTable();
+      } catch (err) {
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-danger py-5 fw-bold" style="background: var(--srm-surface) !important;">
+                <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                데이터 페칭 실패: ${escapeHtml(err && err.message ? err.message : String(err))}
+              </td>
+            </tr>
+          `;
         }
       }
-
-      fetch(primaryUrl)
-        .then(response => {
-          if (!response.ok) throw new Error("Primary fetch failed");
-          return response.json();
-        })
-        .then(data => {
-          processData(data);
-        })
-        .catch(err => {
-          console.log("Primary URL failed, trying fallback...", err);
-          fetch(fallbackUrl)
-            .then(resFallback => {
-              if (!resFallback.ok) throw new Error("Fallback fetch failed too");
-              return resFallback.json();
-            })
-            .then(fallbackData => {
-              processData(fallbackData);
-            })
-            .catch(finalErr => {
-              if (tbody) {
-                tbody.innerHTML = `
-                  <tr>
-                    <td colspan="6" class="text-danger py-5 fw-bold" style="background: var(--srm-surface) !important;">
-                      <i class="bi bi-exclamation-octagon-fill me-1"></i>
-                      데이터 페칭 실패: 양대 레포지토리(market-report, my-market-intelligence)에서 해당 리포트를 찾을 수 없거나 네트워크 오류입니다.
-                    </td>
-                  </tr>
-                `;
-              }
-            });
-        });
     };
 
     window.renderDlTable = function(records) {
@@ -4440,7 +4539,7 @@
         if (currentDlDisplayMode === 'table') {
           renderDlTable(window.__DL_CURRENT_RECORDS);
         } else {
-          renderDlTimeline(window.__DL_CURRENT_RECORDS);
+          renderDlDetailList(window.__DL_CURRENT_RECORDS);
         }
 
         // Restore metrics
@@ -4486,150 +4585,249 @@
       if (currentDlDisplayMode === 'table') {
         renderDlTable(filtered);
       } else {
-        renderDlTimeline(filtered);
+        renderDlDetailList(filtered);
       }
     };
 
 
-     let currentDlDisplayMode = 'table'; // 'table' or 'timeline'
+    let currentDlDisplayMode = 'table'; // 'table' or 'detail'
 
-     window.setDlDisplayMode = function(mode) {
-       currentDlDisplayMode = mode;
-       const btnTable = document.getElementById("btn-dl-mode-table");
-       const btnTimeline = document.getElementById("btn-dl-mode-timeline");
-       
-       if (mode === 'table') {
-         btnTable.className = "btn btn-sm btn-primary py-1 px-3";
-         btnTable.style.removeProperty("background");
-         btnTable.style.removeProperty("color");
-         btnTable.style.removeProperty("border");
-         
-         btnTimeline.className = "btn btn-sm btn-outline-secondary py-1 px-3";
-         btnTimeline.style.background = "transparent";
-         btnTimeline.style.border = "none";
-         btnTimeline.style.color = "var(--srm-text-muted)";
-         
-         document.getElementById("dl-table-wrapper").style.display = "block";
-         document.getElementById("dl-timeline-wrapper").style.display = "none";
-         renderDlTable(window.__DL_CURRENT_RECORDS);
-       } else {
-         btnTimeline.className = "btn btn-sm btn-primary py-1 px-3";
-         btnTimeline.style.removeProperty("background");
-         btnTimeline.style.removeProperty("color");
-         btnTimeline.style.removeProperty("border");
-         
-         btnTable.className = "btn btn-sm btn-outline-secondary py-1 px-3";
-         btnTable.style.background = "transparent";
-         btnTable.style.border = "none";
-         btnTable.style.color = "var(--srm-text-muted)";
-         
-         document.getElementById("dl-table-wrapper").style.display = "none";
-         document.getElementById("dl-timeline-wrapper").style.display = "block";
-         renderDlTimeline(window.__DL_CURRENT_RECORDS);
-       }
-     };
+    window.setDlDisplayMode = function(mode) {
+      currentDlDisplayMode = mode;
+      const btnTable = document.getElementById("btn-dl-mode-table");
+      const btnDetail = document.getElementById("btn-dl-mode-detail");
 
-     window.renderDlTimeline = function(records) {
-       const container = document.getElementById("dl-timeline-content");
-       if (!container) return;
-       
-       if (!records || records.length === 0) {
-         container.innerHTML = `<div class="text-muted text-center py-5">조건에 부합하는 SCM 시황 이력이 없습니다.</div>`;
-         return;
-       }
-       
-       // Sort records chronologically (year/month descending, most recent first)
-       const sorted = [...records].sort((a, b) => (b.year - a.year) || (b.month - a.month));
-       
-       container.innerHTML = sorted.map((r, idx) => {
-         const formattedDate = `${r.year}년 ${r.month}월`;
-         
-         let markerColor = "var(--srm-accent)";
-         if (r.risk_level === "High") markerColor = "#be123c";
-         else if (r.risk_level === "Medium") markerColor = "#f59e0b";
-         
-         let summary = (r.subheading || "").trim();
-         
-         // 소제목이 있고 충분히 긴 글자인 경우 소제목 사용 (불필요한 숫자 기호 제거)
-         if (summary && summary !== "-" && summary.length > 2) {
-           summary = summary.replace(/^\d+[\s\.\,\-\_]*/, "");
-         } else {
-           // 약어나 단락 분절 온점(.) 오작동을 차단하기 위한 고성능 첫문장 파서
-           let rawText = (r.text || "").trim();
-           // 혹시 모를 글머리 기호 제거
-           rawText = rawText.replace(/^[\-\*\•\s]+/, "");
-           
-           let firstSentence = rawText.split(/[.\n]/)[0].trim();
-           
-           // 문장이 영어 약어(U.S. 등) 온점으로 인해 너무 짧게 잘린 경우, 첫 65글자를 잘라내어 우아하게 표출
-           if (firstSentence.length < 6 || firstSentence.length > 100) {
-             firstSentence = rawText.substring(0, 65).trim();
-             if (rawText.length > 65) {
-               firstSentence += "...";
-             }
-           } else {
-             firstSentence += ".";
-           }
-           
-           summary = firstSentence.replace(/^\d+[\s\.\,\-\_]*/, "").trim();
-         }
-         
-         // 최종 방어막: 혹시라도 소제목이 공란이거나 글자가 깨진 경우 깔끔한 기본 타이틀로 치환
-         if (!summary || summary.length < 2) {
-           summary = "SCM 시황 분석 및 세부 리포트";
-         }
-         
-         const vendors = (r.detected_vendors || []).map(v => 
-           `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">${escapeHtml(v)}</span>`
-         ).join("");
-         
-         const categories = (r.detected_categories || [r.category || "기타"]).map(c => {
-           let badgeClass = "bg-secondary";
-           if (c === "IC") badgeClass = "bg-primary";
-           else if (c === "Memory") badgeClass = "bg-info text-dark";
-           else if (c === "Storage") badgeClass = "bg-success";
-           else if (c === "PCB") badgeClass = "bg-dark";
-           return `<span class="badge ${badgeClass} me-1" style="font-size: 10px;">${escapeHtml(c)}</span>`;
-         }).join("");
-         
-         const uniqId = `timeline-text-${idx}`;
-         
-         return `
-           <div class="timeline-item" style="position: relative; margin-bottom: 24px; padding-left: 24px;">
-             <div class="timeline-marker" style="position: absolute; left: -9px; top: 4px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--srm-surface); box-shadow: 0 0 0 2px ${markerColor}; background: ${markerColor}; transition: all 0.2s ease;"></div>
-             <div class="timeline-card" style="background: var(--srm-surface-2) !important; border: 1px solid var(--srm-border); border-radius: 12px; padding: 14px 18px; box-shadow: var(--srm-shadow-sm); text-align: left;">
-               <div class="timeline-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
-                 <span class="timeline-date" style="font-size: 0.85rem; font-weight: 700; color: var(--srm-accent); font-variant-numeric: tabular-nums;">${formattedDate}</span>
-                 <div>
-                   ${categories}
-                   ${vendors}
-                 </div>
-               </div>
-               <div class="timeline-summary" style="font-weight: 700; font-size: 0.95rem; color: var(--srm-text); margin-bottom: 4px; cursor: pointer;" onclick="toggleTimelineCollapse('${uniqId}')">
-                 <i class="bi bi-caret-right-fill me-1" id="icon-${uniqId}"></i> ${escapeHtml(summary)}
-               </div>
-               <div id="${uniqId}" class="timeline-text" style="font-size: 0.82rem; color: var(--srm-text-secondary); line-height: 1.55; display: none; margin-top: 10px; border-top: 1px dashed var(--srm-border); padding-top: 10px; white-space: normal;">
-                 ${escapeHtml(r.text)}
-               </div>
-             </div>
-           </div>
-         `;
-       }).join("");
-     };
-     
-     window.toggleTimelineCollapse = function(id) {
-       const el = document.getElementById(id);
-       const icon = document.getElementById("icon-" + id);
-       if (el) {
-         if (el.style.display === "none") {
-           el.style.display = "block";
-           icon.className = "bi bi-caret-down-fill me-1";
-         } else {
-           el.style.display = "none";
-           icon.className = "bi bi-caret-right-fill me-1";
-         }
-       }
-     };
+      if (mode === 'table') {
+        btnTable.className = "btn btn-sm btn-primary py-1 px-3";
+        btnTable.style.removeProperty("background");
+        btnTable.style.removeProperty("color");
+        btnTable.style.removeProperty("border");
+
+        btnDetail.className = "btn btn-sm btn-outline-secondary py-1 px-3";
+        btnDetail.style.background = "transparent";
+        btnDetail.style.border = "none";
+        btnDetail.style.color = "var(--srm-text-muted)";
+
+        document.getElementById("dl-table-wrapper").style.display = "block";
+        document.getElementById("dl-detail-wrapper").style.display = "none";
+        renderDlTable(window.__DL_CURRENT_RECORDS);
+      } else {
+        btnDetail.className = "btn btn-sm btn-primary py-1 px-3";
+        btnDetail.style.removeProperty("background");
+        btnDetail.style.removeProperty("color");
+        btnDetail.style.removeProperty("border");
+
+        btnTable.className = "btn btn-sm btn-outline-secondary py-1 px-3";
+        btnTable.style.background = "transparent";
+        btnTable.style.border = "none";
+        btnTable.style.color = "var(--srm-text-muted)";
+
+        document.getElementById("dl-table-wrapper").style.display = "none";
+        document.getElementById("dl-detail-wrapper").style.display = "block";
+        renderDlDetailList(window.__DL_CURRENT_RECORDS);
+      }
+    };
+
+    // [수정] 기존 renderDlTimeline()을 대체. 더 이상 "타임라인"이 아니라 클릭 없이
+    // 처음부터 본문 전체가 항상 보이는 상세 리스트 뷰. 카드 마크업/배지 구성은
+    // 원본과 동일하게 유지하고, 클릭-토글 캐럿 아이콘과 요약 문장 파싱 로직만 제거.
+    window.renderDlDetailList = function(records) {
+      const container = document.getElementById("dl-detail-content");
+      if (!container) return;
+
+      if (!records || records.length === 0) {
+        container.innerHTML = `<div class="text-muted text-center py-5">조건에 부합하는 SCM 시황 데이터가 없습니다.</div>`;
+        return;
+      }
+
+      const sorted = [...records].sort((a, b) => (b.year - a.year) || (b.month - a.month));
+
+      container.innerHTML = sorted.map((r) => {
+        const formattedDate = `${r.year}년 ${r.month}월`;
+
+        let markerColor = "var(--srm-accent)";
+        if (r.risk_level === "High") markerColor = "#be123c";
+        else if (r.risk_level === "Medium") markerColor = "#f59e0b";
+
+        const vendors = (r.detected_vendors || []).map(v =>
+          `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">${escapeHtml(v)}</span>`
+        ).join("");
+
+        const categories = (r.detected_categories || [r.category || "기타"]).map(c => {
+          let badgeClass = "bg-secondary";
+          if (c === "IC") badgeClass = "bg-primary";
+          else if (c === "Memory") badgeClass = "bg-info text-dark";
+          else if (c === "Storage") badgeClass = "bg-success";
+          else if (c === "PCB") badgeClass = "bg-dark";
+          return `<span class="badge ${badgeClass} me-1" style="font-size: 10px;">${escapeHtml(c)}</span>`;
+        }).join("");
+
+        const subheading = (r.subheading && r.subheading !== "-") ? escapeHtml(r.subheading) : "";
+
+        return `
+          <div class="timeline-item" style="position: relative; margin-bottom: 24px; padding-left: 24px;">
+            <div class="timeline-marker" style="position: absolute; left: -9px; top: 4px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--srm-surface); box-shadow: 0 0 0 2px ${markerColor}; background: ${markerColor}; transition: all 0.2s ease;"></div>
+            <div class="timeline-card" style="background: var(--srm-surface-2) !important; border: 1px solid var(--srm-border); border-radius: 12px; padding: 14px 18px; box-shadow: var(--srm-shadow-sm); text-align: left;">
+              <div class="timeline-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                <span class="timeline-date" style="font-size: 0.85rem; font-weight: 700; color: var(--srm-accent); font-variant-numeric: tabular-nums;">${formattedDate}</span>
+                <div>
+                  ${categories}
+                  ${vendors}
+                </div>
+              </div>
+              ${subheading ? `<div class="timeline-summary">${subheading}</div>` : ``}
+              <div class="timeline-text">${escapeHtml(r.text)}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    };
+
+    // ===== [신설] 주요 타임라인: 테마별 이슈를 좌→우 가로 스크롤 타임라인으로 시각화 =====
+    window.__DL_THEME_TIMELINE_CACHE = null; // { [themeValue]: records[] }
+    window.__MAJOR_TIMELINE_ACTIVE_KEY = null;
+
+    window.loadMajorTimeline = function() {
+      const loadingEl = document.getElementById("major-timeline-loading");
+      const lanesEl = document.getElementById("major-timeline-lanes");
+      const detailEl = document.getElementById("major-timeline-detail");
+      if (!lanesEl) return;
+
+      if (window.__DL_THEME_TIMELINE_CACHE) {
+        renderMajorTimelineLanes(window.__DL_THEME_TIMELINE_CACHE);
+        return;
+      }
+
+      if (loadingEl) loadingEl.style.display = "block";
+      lanesEl.style.display = "none";
+      if (detailEl) detailEl.style.display = "none";
+
+      Promise.all(
+        DL_REPORTS.theme.map(t => fetchDimensionValueRecords('theme', t.value).then(records => [t.value, records || []]))
+      ).then(pairs => {
+        const cache = {};
+        pairs.forEach(([value, records]) => { cache[value] = records; });
+        window.__DL_THEME_TIMELINE_CACHE = cache;
+        if (loadingEl) loadingEl.style.display = "none";
+        renderMajorTimelineLanes(cache);
+      }).catch(err => {
+        if (loadingEl) {
+          loadingEl.innerHTML = `<span class="text-danger">주요 타임라인 로드 실패: ${escapeHtml(err && err.message ? err.message : String(err))}</span>`;
+        }
+      });
+    };
+
+    function renderMajorTimelineLanes(cache) {
+      const lanesEl = document.getElementById("major-timeline-lanes");
+      if (!lanesEl) return;
+
+      const severityRank = { High: 3, Medium: 2, Low: 1 };
+      const severityColor = { High: "#be123c", Medium: "#f59e0b", Low: "#10b981" };
+
+      const html = DL_REPORTS.theme.map(themeMeta => {
+        const records = cache[themeMeta.value] || [];
+
+        // 연-월 단위로 그룹핑, 해당 월의 최고 위험도로 노드 색상 결정
+        const monthMap = new Map();
+        records.forEach(r => {
+          const key = `${r.year}-${String(r.month).padStart(2, '0')}`;
+          const rank = severityRank[r.risk_level] || 0;
+          const cur = monthMap.get(key);
+          if (!cur || rank > cur.rank) {
+            monthMap.set(key, { year: r.year, month: r.month, rank, level: r.risk_level || 'Low' });
+          }
+        });
+        const months = Array.from(monthMap.values()).sort((a, b) => (a.year - b.year) || (a.month - b.month));
+
+        const nodesHtml = months.length === 0
+          ? `<span class="text-muted" style="font-size: 0.78rem;">데이터 없음</span>`
+          : months.map(m => {
+              const nodeKey = `${themeMeta.value}__${m.year}-${String(m.month).padStart(2, '0')}`;
+              const color = severityColor[m.level] || "#8b95a1";
+              return `
+                <span class="major-timeline-node" id="mt-node-${nodeKey}" onclick="onMajorTimelineNodeClick('${themeMeta.value}', ${m.year}, ${m.month})">
+                  <span class="dot" style="background:${color};"></span>
+                  <span class="node-label">'${String(m.year).slice(-2)}.${String(m.month).padStart(2, '0')}</span>
+                </span>
+              `;
+            }).join("");
+
+        return `
+          <div class="major-timeline-lane">
+            <div class="major-timeline-lane-label">${escapeHtml(themeMeta.label)}</div>
+            <div class="major-timeline-track">${nodesHtml}</div>
+          </div>
+        `;
+      }).join("");
+
+      lanesEl.innerHTML = html;
+      lanesEl.style.display = "block";
+    }
+
+    // 노드를 클릭하면 해당 테마·해당 월의 이슈들을 제조사(품목)별로 그룹핑해서 아래에 표시.
+    // 요약은 제조사 이름 밑에 바로 보이고, 전체 본문은 마우스오버(title 속성)로 확인 가능.
+    window.onMajorTimelineNodeClick = function(themeValue, year, month) {
+      const key = `${themeValue}__${year}-${String(month).padStart(2, '0')}`;
+      const detailEl = document.getElementById("major-timeline-detail");
+
+      document.querySelectorAll('.major-timeline-node.is-active').forEach(el => el.classList.remove('is-active'));
+
+      // 같은 노드를 다시 클릭하면 상세 패널을 닫음 (토글)
+      if (window.__MAJOR_TIMELINE_ACTIVE_KEY === key) {
+        window.__MAJOR_TIMELINE_ACTIVE_KEY = null;
+        if (detailEl) { detailEl.style.display = "none"; detailEl.innerHTML = ""; }
+        return;
+      }
+      window.__MAJOR_TIMELINE_ACTIVE_KEY = key;
+      const nodeEl = document.getElementById(`mt-node-${key}`);
+      if (nodeEl) nodeEl.classList.add('is-active');
+
+      const cache = window.__DL_THEME_TIMELINE_CACHE || {};
+      const records = (cache[themeValue] || []).filter(r => r.year === year && r.month === month);
+
+      const themeMeta = DL_REPORTS.theme.find(t => t.value === themeValue);
+      const themeLabel = themeMeta ? themeMeta.label : themeValue;
+
+      if (!detailEl) return;
+
+      if (records.length === 0) {
+        detailEl.innerHTML = `<div class="text-muted text-center py-3" style="font-size: 0.82rem;">해당 시기에 발견된 이슈가 없습니다.</div>`;
+        detailEl.style.display = "block";
+        return;
+      }
+
+      // 제조사(벤더)별로 그룹핑 — 벤더 태깅이 없는 항목은 "기타"로 분류
+      const vendorGroups = new Map();
+      records.forEach(r => {
+        const vendors = (r.detected_vendors && r.detected_vendors.length > 0) ? r.detected_vendors : ["기타"];
+        vendors.forEach(v => {
+          if (!vendorGroups.has(v)) vendorGroups.set(v, []);
+          vendorGroups.get(v).push(r);
+        });
+      });
+
+      const cardsHtml = Array.from(vendorGroups.entries()).map(([vendor, items]) => {
+        const itemsHtml = items.map(r => {
+          const summary = (r.subheading && r.subheading !== "-") ? r.subheading : (r.text || "").slice(0, 60);
+          return `<div style="font-size: 0.78rem; color: var(--srm-text-secondary); margin-top: 4px;" title="${escapeHtml(r.text || "")}">- ${escapeHtml(summary)}</div>`;
+        }).join("");
+        return `
+          <div class="p-2 border rounded" style="background: var(--srm-surface-2) !important; border-color: var(--srm-border) !important; border-radius: 8px; min-width: 220px;">
+            <div class="fw-bold" style="font-size: 0.84rem; color: var(--srm-text);"><i class="bi bi-building me-1"></i>${escapeHtml(vendor)}</div>
+            ${itemsHtml}
+          </div>
+        `;
+      }).join("");
+
+      detailEl.innerHTML = `
+        <div class="fw-bold mb-2" style="font-size: 0.85rem; color: var(--srm-text);">
+          <i class="bi bi-info-circle-fill me-1 text-primary"></i>${escapeHtml(themeLabel)} · ${year}년 ${month}월 상세 (제조사/품목별)
+        </div>
+        <div class="d-flex flex-wrap gap-2">${cardsHtml}</div>
+      `;
+      detailEl.style.display = "block";
+    };
+
 
     document.addEventListener('DOMContentLoaded', initialize);
     
