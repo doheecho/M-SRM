@@ -1,0 +1,159 @@
+<!-- =====================================================================
+     통합_header.html  ·  메-SRM 전 모듈 공용 글로벌 헤더 (단일 canonical)
+     ---------------------------------------------------------------------
+     사용법 : 각 모듈 index.html <body> 최상단에서
+                  <?!= include('통합_header'); ?>
+              (반드시 <head> 에서 include('통합_theme') 를 먼저 인클루드)
+     구성   : ① 헤더 고유 레이아웃 CSS (팔레트/토큰은 통합_theme 상속)
+              ② renderHeaderUI(userInfo, moduleTitle, menuGroups)
+                 - userInfo : {name,dept,email} 객체 또는 이메일 문자열
+                 - menuGroups : 서버가 넘겨주면 사용, 없으면 google.script.run
+                                .getMenuLinks() 자동 조회 (모듈 Code.gs 또는
+                                통합_common.gs 의 getMenuLinks 필요)
+              ③ 드롭다운 전체메뉴 + 테마설정 토글 + 접속자/접속시간/Confidential
+     주의   : include 대상이므로 <!DOCTYPE>/<html>/<body> 금지.
+              이 파일은 모든 모듈 GAS 프로젝트에 동일 파일명으로 복사.
+     ===================================================================== -->
+<style>
+  /* 헤더 고유 미세 조정만 — 색/토큰은 통합_theme.html #srm-theme 에서 상속 */
+  #global-header .header-title{ letter-spacing:-.01em; }
+  #global-header .user-info-text .sep{ opacity:.45; margin:0 10px; }
+  #global-header .admin-badge{
+    font-size:.72rem;font-weight:700;line-height:1;padding:3px 7px;border-radius:999px;
+    background:rgba(255,255,255,.16);color:#fff;margin-left:10px;letter-spacing:.02em;
+  }
+  body.dark-theme #global-header .admin-badge{ background:rgba(246,146,17,.22);color:var(--srm-gnb-title); }
+  #global-header .dropdown-menu{ min-width:230px; box-shadow:var(--srm-shadow-lg); border-color:var(--srm-border); }
+  #global-header .dropdown-header{ font-size:.72rem;font-weight:700;color:var(--srm-text-muted);
+    text-transform:uppercase;letter-spacing:.04em;padding:.4rem 1rem .2rem; }
+  #global-header #theme-toggle-btn::before{ content:"\25D0";margin-right:7px;opacity:.75; }
+</style>
+<script>
+(function (w, d) {
+  'use strict';
+
+  function pad(n){ return String(n).padStart(2, '0'); }
+
+  function resolveName(userInfoOrEmail){
+    if (userInfoOrEmail && typeof userInfoOrEmail === 'object') {
+      if (userInfoOrEmail.dept) return userInfoOrEmail.dept + ' ' + (userInfoOrEmail.name || '');
+      return userInfoOrEmail.name || 'USER';
+    }
+    if (typeof userInfoOrEmail === 'string' && userInfoOrEmail) {
+      return userInfoOrEmail.split('@')[0].toUpperCase();
+    }
+    return 'USER';
+  }
+
+  /**
+   * 전 모듈 공통 헤더 렌더러.
+   * @param {Object|string} userInfoOrEmail  {name,dept,email} 또는 이메일 문자열
+   * @param {string}        moduleTitle      헤더에 파랑/앰버로 표기할 모듈명
+   * @param {Array<Array>=} menuGroups       [[{title,url}...], ...] (옵션)
+   * @param {Object=}       opts             { admin:boolean }
+   */
+  function renderHeaderUI(userInfoOrEmail, moduleTitle, menuGroups, opts){
+    opts = opts || {};
+    var header = d.getElementById('global-header');
+    if (!header) {
+      header = d.createElement('header');
+      header.id = 'global-header';
+      d.body.insertBefore(header, d.body.firstChild);
+    }
+
+    if (!w.initialConnectTime) {
+      var now = new Date();
+      w.initialConnectTime = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) +
+        ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    }
+
+    var isObject = (userInfoOrEmail && typeof userInfoOrEmail === 'object');
+    var initialName = resolveName(userInfoOrEmail);
+    var titleSuffix = moduleTitle ? '&nbsp;&nbsp;<span class="module-title">' + moduleTitle + '</span>' : '';
+    var adminBadge = opts.admin ? '<span class="admin-badge">ADMIN</span>' : '';
+
+    header.innerHTML =
+      '<div class="header-title">삼성메디슨 구매그룹' + titleSuffix + '</div>' +
+      '<div class="header-buttons">' +
+        '<span class="user-info-text">' +
+          '<span id="dynamic-user-name">' + initialName + '</span>' + adminBadge +
+          '<span class="sep">|</span>접속시간: ' + w.initialConnectTime +
+        '</span>' +
+        '<div class="dropdown">' +
+          '<button class="btn btn-outline-light btn-icon-menu" type="button" id="dropdownMenuButton" ' +
+            'data-bs-toggle="dropdown" aria-expanded="false" title="전체 메뉴">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+              'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line>' +
+              '<line x1="3" y1="18" x2="21" y2="18"></line></svg>' +
+          '</button>' +
+          '<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton" id="dynamic-menu-list">' +
+            '<li><a class="dropdown-item text-muted" href="#">메뉴 로딩 중...</a></li>' +
+          '</ul>' +
+        '</div>' +
+        '<span class="confidential-text">Confidential</span>' +
+      '</div>';
+
+    populateMenu(menuGroups);
+
+    // 이메일 문자열만 받은 경우 서버에서 부서/이름 보강
+    if (!isObject && w.google && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function (fullName){
+        var el = d.getElementById('dynamic-user-name');
+        if (el && fullName) el.innerHTML = fullName;
+      }).fetchUserDeptAndName();
+    }
+  }
+
+  function withTheme(url){
+    // 모듈 간 이동 시 현재 테마를 URL 로 전달 (origin 별 localStorage 미공유 보완)
+    if (!url || url === '#' || url.indexOf('javascript:') === 0) return url || '#';
+    var theme = (w.SRMTheme ? SRMTheme.get() : 'light');
+    return url + (url.indexOf('?') === -1 ? '?' : '&') + 'srm_theme=' + theme;
+  }
+
+  function menuItemsHtml(groups){
+    var html = '';
+    groups.forEach(function (group, gi){
+      (group || []).forEach(function (link){
+        if (!link || !link.title) return;
+        html += '<li><a class="dropdown-item" href="' + withTheme(link.url || '#') +
+                '" target="_blank" rel="noopener">' + link.title + '</a></li>';
+      });
+      if (gi < groups.length - 1) html += '<li><hr class="dropdown-divider"></li>';
+    });
+    return html;
+  }
+
+  function themeToggleHtml(){
+    return '<li><hr class="dropdown-divider"></li>' +
+      '<li><a class="dropdown-item" href="javascript:void(0)" ' +
+      'onclick="(window.SRMTheme?SRMTheme.toggle():toggleTheme())" id="theme-toggle-btn">테마설정: Dark</a></li>';
+  }
+
+  function paintMenu(groups){
+    var list = d.getElementById('dynamic-menu-list');
+    if (!list) return;
+    var body = (groups && groups.length)
+      ? menuItemsHtml(groups)
+      : '<li><a class="dropdown-item text-danger" href="#">메뉴를 불러올 수 없습니다.</a></li>';
+    list.innerHTML = body + themeToggleHtml();
+    // 드롭다운 진입 시점의 저장 테마로 토글 라벨 동기화
+    if (w.SRMTheme) SRMTheme.apply(SRMTheme.get());
+  }
+
+  function populateMenu(menuGroups){
+    if (menuGroups && menuGroups.length) { paintMenu(menuGroups); return; }
+    if (w.google && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(paintMenu)
+        .withFailureHandler(function (){ paintMenu(null); })
+        .getMenuLinks();
+    } else {
+      paintMenu(null);
+    }
+  }
+
+  w.renderHeaderUI = renderHeaderUI;
+})(window, document);
+</script>
