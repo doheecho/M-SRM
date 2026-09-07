@@ -1,0 +1,576 @@
+<!-- =====================================================================
+     통합_theme.html  ·  메-SRM 공용 디자인 & 테마 시스템 (Light / Dark)
+     ---------------------------------------------------------------------
+     사용법 : 각 모듈 index.html <head> 안, <meta charset> 바로 다음 &
+              Bootstrap CSS <link> "앞"에 아래 한 줄로 인클루드
+                  <?!= include('통합_theme'); ?>
+     제공   : ① 첫 페인트 흰/검 번쩍임(FOUC) 방지
+              ② CSS 변수 디자인 토큰 (라이트/다크 + 구 변수 별칭 호환)
+              ③ 글로벌 헤더·Bootstrap·공용 컴포넌트 다크 보정
+              ④ window.SRMTheme (apply/toggle/get) + 하위호환 applyTheme/toggleTheme
+              ⑤ window.SRM 프론트 공용 헬퍼 (debounce/format*/renderRows/guard 등)
+     주의   : 이 파일은 모든 모듈 GAS 프로젝트에 "동일 파일명(통합_theme)"으로
+              복사되어야 하며, include 대상이므로 <!DOCTYPE>/<html>/<body> 금지.
+     ===================================================================== -->
+<script>
+/* 0. FOUC 방지 — 본문 파싱 전에 테마를 <html>에 즉시 반영 -------------------------
+   우선순위: URL ?srm_theme=dark|light  →  localStorage['srm-theme']  →  light
+   (모듈 간 이동 시 통합_header 가 메뉴 링크에 ?srm_theme= 를 붙여 테마를 전달하며,
+    GAS 각 모듈이 서로 다른 origin 이라 localStorage 가 공유되지 않는 문제를 보완) */
+(function () {
+  try {
+    // 1) 서버 주입값(window.__SRM_THEME) — doGet(e).parameter.srm_theme 에서 옴 (모듈 간 이동)
+    var s = (typeof window.__SRM_THEME === 'string') ? window.__SRM_THEME : '';
+    // 2) URL 파라미터 (GAS iframe 밖에서 열리는 경우 대비)
+    var q = '';
+    try { q = new URLSearchParams(location.search).get('srm_theme') || ''; } catch (e) {}
+    var hint = (s === 'dark' || s === 'light') ? s : ((q === 'dark' || q === 'light') ? q : '');
+    // 3) 마지막으로 localStorage
+    var t = hint || (localStorage.getItem('srm-theme') || 'light');
+    try { localStorage.setItem('srm-theme', t); } catch (e) {}
+    document.documentElement.setAttribute('data-srm-theme', t);
+    if (t === 'dark') document.documentElement.classList.add('dark-theme');
+  } catch (e) {}
+})();
+</script>
+<style id="srm-critical">
+  /* 리소스 로딩 대기 중에도 배경색이 즉시 확정되도록 (White/Black Flash 종식) */
+  html { background:#f4f7f9; }
+  html.dark-theme { background:#0f1216; }
+  html.dark-theme body { background:#0f1216; color:#e6e9ee; }
+
+  /* 공용 순수 CSS 로더 (모듈이 원하면 사용) */
+  .srm-boot-loader{position:fixed;inset:0;z-index:999999;display:flex;align-items:center;
+    justify-content:center;background:var(--srm-bg,#f4f7f9);}
+  .srm-spinner{width:42px;height:42px;border-radius:50%;
+    border:4px solid rgba(20,40,160,.15);border-top-color:#1428A0;animation:srm-spin .8s linear infinite;}
+  html.dark-theme .srm-spinner{border-color:rgba(245,158,11,.22);border-top-color:#f59e0b;}
+  @keyframes srm-spin{to{transform:rotate(360deg);}}
+</style>
+<style id="srm-theme">
+/* =====================================================================
+   1. 디자인 토큰 — LIGHT (기본)
+   ===================================================================== */
+:root{
+  color-scheme: light;
+
+  /* 표면 */
+  --srm-bg:#f4f7f9;
+  --srm-surface:#ffffff;
+  --srm-surface-2:#eef2f7;      /* thead / 살짝 솟은 면 */
+  --srm-surface-3:#f8fafc;      /* 살짝 가라앉은 면 */
+  --srm-overlay:rgba(255,255,255,.86);
+  --srm-ai-bg:#f7f9fd;          /* AI 분석/시사점 박스 배경 */
+
+  /* 텍스트 */
+  --srm-text:#1f2430;
+  --srm-text-secondary:#4a5568;
+  --srm-text-muted:#8a94a6;
+  --srm-text-inverse:#ffffff;
+
+  /* 경계선 */
+  --srm-border:#e0e4e8;
+  --srm-border-strong:#c7ced8;
+
+  /* 브랜드 / 강조 : 라이트 = 삼성 블루 */
+  --srm-accent:#1428A0;
+  --srm-accent-hover:#0b1c73;
+  --srm-accent-contrast:#ffffff;
+  --srm-accent-soft:#E3F2FD;
+  --srm-accent-soft-border:#BBDEFB;
+  --srm-accent-text:#0D47A1;
+
+  /* 글로벌 헤더(GNB) */
+  --srm-gnb-bg:#1428A0;
+  --srm-gnb-text:#E0E0E0;
+  --srm-gnb-title:#00BFFF;
+  --srm-gnb-btn-border:rgba(255,255,255,.5);
+
+  /* 표 */
+  --srm-th-bg:#E3F2FD;
+  --srm-th-text:#1428A0;
+  --srm-td-bg:#ffffff;
+  --srm-row-hover:#f1f4ff;
+  --srm-sticky-bg:#ffffff;
+
+  /* 폼 컨트롤 */
+  --srm-input-bg:#ffffff;
+  --srm-input-border:#ccd2da;
+  --srm-input-text:#1f2430;
+  --srm-input-numeric-bg:#fff3cd;
+  --srm-input-numeric-border:#ffe69c;
+
+  /* 상태색 */
+  --srm-up:#DC3545;     /* 증가 / 상승 */
+  --srm-down:#0D6EFD;   /* 감소 / 하락 */
+  --srm-danger:#DC3545;
+  --srm-success:#198754;
+  --srm-warning:#fd7e14;
+  --srm-info:#0dcaf0;
+
+  /* 그림자 / 반경 */
+  --srm-shadow-sm:0 1px 2px rgba(16,24,40,.06);
+  --srm-shadow-md:0 4px 12px rgba(16,24,40,.08);
+  --srm-shadow-lg:0 16px 40px rgba(16,24,40,.16);
+  --srm-radius-sm:6px;
+  --srm-radius:12px;
+  --srm-radius-lg:16px;
+
+  /* 범주형 차트 팔레트 */
+  --srm-chart-1:#1428A0;
+  --srm-chart-2:#009DE0;
+  --srm-chart-3:#6C757D;
+  --srm-chart-4:#F5A623;
+  --srm-chart-5:#198754;
+  --srm-chart-6:#DC3545;
+  --srm-chart-grid:rgba(16,24,40,.08);
+  --srm-chart-tick:#4a5568;
+
+  /* ---- 구(舊) 변수 별칭 : 기존 모듈 CSS 무수정 호환 ---- */
+  --samsung-blue:var(--srm-accent);
+  --bg-body:var(--srm-bg);
+  --bg-card:var(--srm-surface);
+  --bg-color:var(--srm-bg);
+  --header-bg-color:var(--srm-th-bg);
+  --border-color:var(--srm-border);
+  --text-main:var(--srm-text);
+  --text-body:var(--srm-text-secondary);
+  --text-muted:var(--srm-text-muted);
+  --up-color:var(--srm-up);
+  --down-color:var(--srm-down);
+  --gnb-bg:var(--srm-gnb-bg);
+  --gnb-text:var(--srm-gnb-text);
+  --gnb-border:none;
+  --gnb-btn-border:var(--srm-gnb-btn-border);
+  --gnb-btn-hover-bg:rgba(255,255,255,.1);
+  --gnb-btn-hover-color:#fff;
+  --module-title-color:var(--srm-gnb-title);
+  --table-th-bg:var(--srm-th-bg);
+  --table-th-color:var(--srm-th-text);
+  --table-border:var(--srm-border);
+  --table-hover-bg:var(--srm-row-hover);
+  --portal-btn-bg:var(--srm-accent-soft);
+  --portal-btn-border:var(--srm-accent-soft-border);
+  --portal-btn-color:var(--srm-accent-text);
+  --portal-btn-icon-bg:#29B6F6;
+  --portal-btn-icon-color:#ffffff;
+  --portal-btn-hover-bg:var(--srm-accent);
+  --portal-btn-hover-color:#ffffff;
+  --work-link-bg:var(--srm-accent-soft);
+  --work-link-border:var(--srm-accent-soft-border);
+  --work-link-color:var(--srm-accent-text);
+  --work-link-hover-bg:var(--srm-accent);
+  --work-link-hover-color:#ffffff;
+  --badge-bg:var(--srm-accent);
+  --badge-color:#ffffff;
+  --badge-radius:50rem;
+}
+
+/* =====================================================================
+   2. 디자인 토큰 — DARK  (README 명세의 앰버 / 차콜 팔레트 계승)
+   ===================================================================== */
+:root.dark-theme, body.dark-theme{
+  color-scheme: dark;
+
+  /* 쿨 블루그레이 중립톤 + 앰버 액센트 + KR 등락색(빨강↑/파랑↓)
+     — market-forecast 톤 정렬 (#0f1216 / #171c23 / #1e252e / #2b333d ...) */
+  --srm-bg:#0f1216;
+  --srm-surface:#171c23;
+  --srm-surface-2:#1e252e;
+  --srm-surface-3:#1a2027;
+  --srm-overlay:rgba(15,18,22,.86);
+  --srm-ai-bg:#222322;          /* AI 분석 박스 — market-forecast Advisor 톤(앰버 5% + panel) */
+
+  --srm-text:#e6e9ee;
+  --srm-text-secondary:#c3c9d1;
+  --srm-text-muted:#8b95a1;
+  --srm-text-inverse:#0f1216;
+
+  --srm-border:#2b333d;
+  --srm-border-strong:#3a444f;
+
+  --srm-accent:#f59e0b;
+  --srm-accent-hover:#d98a06;
+  --srm-accent-contrast:#0f1216;
+  --srm-accent-soft:#1e252e;
+  --srm-accent-soft-border:#7a5e1e;
+  --srm-accent-text:#f59e0b;
+
+  --srm-gnb-bg:#171c23;
+  --srm-gnb-text:#c3c9d1;
+  --srm-gnb-title:#f59e0b;
+  --srm-gnb-btn-border:#3a444f;
+
+  --srm-th-bg:#1e252e;
+  --srm-th-text:#f59e0b;
+  --srm-td-bg:#0f1216;
+  --srm-row-hover:rgba(139,149,161,.10);
+  --srm-sticky-bg:#141922;
+
+  --srm-input-bg:#141922;
+  --srm-input-border:#2b333d;
+  --srm-input-text:#e6e9ee;
+  --srm-input-numeric-bg:rgba(245,158,11,.10);
+  --srm-input-numeric-border:#7a5e1e;
+
+  --srm-up:#ef4444;
+  --srm-down:#3b82f6;
+  --srm-danger:#f87171;
+  --srm-success:#22c55e;
+  --srm-warning:#f59e0b;
+  --srm-info:#38bdf8;
+
+  --srm-shadow-sm:0 1px 2px rgba(0,0,0,.35);
+  --srm-shadow-md:0 4px 14px rgba(0,0,0,.40);
+  --srm-shadow-lg:0 18px 40px rgba(0,0,0,.50);
+
+  --srm-chart-1:#f59e0b;
+  --srm-chart-2:#38bdf8;
+  --srm-chart-3:#8b95a1;
+  --srm-chart-4:#22c55e;
+  --srm-chart-5:#a78bfa;
+  --srm-chart-6:#ef4444;
+  --srm-chart-grid:rgba(139,149,161,.15);
+  --srm-chart-tick:#8b95a1;
+
+  /* 구 변수 별칭 중 다크 전용 재지정 */
+  --portal-btn-icon-bg:#f59e0b;
+  --portal-btn-icon-color:#0f1216;
+  --gnb-btn-border:#3a444f;
+}
+
+/* =====================================================================
+   3. 기본 요소 · Bootstrap 다크 보정 (모듈에 별도 규칙이 없어도 최소 동작)
+   ===================================================================== */
+body.dark-theme{background-color:var(--srm-bg);color:var(--srm-text);}
+body.dark-theme .bg-white,
+body.dark-theme .bg-light{background-color:var(--srm-surface-2)!important;}
+body.dark-theme .text-dark,
+body.dark-theme .text-black,
+body.dark-theme .text-body{color:var(--srm-text)!important;}
+
+/* -----------------------------------------------------------------
+   다크 전면 가독성: 하드코딩된 검정/진회색 텍스트(인라인 style + Bootstrap
+   기본색)를 밝은 톤으로 강제. 의미색(#DC3545/#0D6EFD/#198754/#6f42c1 …)은
+   substring 이 달라 매칭되지 않으므로 그대로 유지된다.
+   ----------------------------------------------------------------- */
+body.dark-theme [style*="color:#000"],  body.dark-theme [style*="color: #000"],
+body.dark-theme [style*="color:#111"],  body.dark-theme [style*="color: #111"],
+body.dark-theme [style*="color:#222"],  body.dark-theme [style*="color: #222"],
+body.dark-theme [style*="color:#333"],  body.dark-theme [style*="color: #333"],
+body.dark-theme [style*="color:#444"],  body.dark-theme [style*="color: #444"],
+body.dark-theme [style*="color:#000000"], body.dark-theme [style*="color: #000000"],
+body.dark-theme [style*="color:#212529"], body.dark-theme [style*="color: #212529"],
+body.dark-theme [style*="color:#343a40"], body.dark-theme [style*="color: #343a40"],
+body.dark-theme [style*="color:#495057"], body.dark-theme [style*="color: #495057"],
+body.dark-theme [style*="color:rgb(0,0,0)"], body.dark-theme [style*="color: rgb(0, 0, 0)"],
+body.dark-theme [style*="color:black"], body.dark-theme [style*="color: black"]{
+  color:var(--srm-text)!important;
+}
+body.dark-theme [style*="color:#555"],  body.dark-theme [style*="color: #555"],
+body.dark-theme [style*="color:#666"],  body.dark-theme [style*="color: #666"],
+body.dark-theme [style*="color:#777"],  body.dark-theme [style*="color: #777"],
+body.dark-theme [style*="color:#888"],  body.dark-theme [style*="color: #888"],
+body.dark-theme [style*="color:#999"],  body.dark-theme [style*="color: #999"],
+body.dark-theme [style*="color:#6c757d"], body.dark-theme [style*="color: #6c757d"],
+body.dark-theme [style*="color:#868e96"], body.dark-theme [style*="color: #868e96"],
+body.dark-theme [style*="color:#a0a0a0"], body.dark-theme [style*="color: #adb5bd"]{
+  color:var(--srm-text-secondary)!important;
+}
+/* 클래스 기반 검정 텍스트 (모듈 CSS 의 color:#000 !important 대응) */
+body.dark-theme table,
+body.dark-theme .table td, body.dark-theme .table th,
+body.dark-theme td, body.dark-theme th,
+body.dark-theme label, body.dark-theme p, body.dark-theme span:not([style*="color"]),
+body.dark-theme h1, body.dark-theme h2, body.dark-theme h3,
+body.dark-theme h4, body.dark-theme h5, body.dark-theme h6,
+body.dark-theme .fw-bold, body.dark-theme strong, body.dark-theme b{
+  color:var(--srm-text);
+}
+body.dark-theme .text-muted,
+body.dark-theme .text-secondary{color:var(--srm-text-muted)!important;}
+body.dark-theme .text-danger{color:var(--srm-danger)!important;}
+body.dark-theme .text-success{color:var(--srm-success)!important;}
+body.dark-theme .text-warning{color:var(--srm-warning)!important;}
+body.dark-theme a{color:var(--srm-accent);}
+body.dark-theme .border,
+body.dark-theme .border-top,
+body.dark-theme .border-bottom,
+body.dark-theme .border-start,
+body.dark-theme .border-end{border-color:var(--srm-border)!important;}
+
+body.dark-theme .card,
+body.dark-theme .modal-content,
+body.dark-theme .list-group,
+body.dark-theme .list-group-item,
+body.dark-theme .dropdown-menu{
+  background-color:var(--srm-surface);
+  color:var(--srm-text);
+  border-color:var(--srm-border);
+}
+body.dark-theme .modal-header,
+body.dark-theme .modal-footer{border-color:var(--srm-border);background-color:var(--srm-surface-3);}
+body.dark-theme .dropdown-item{color:var(--srm-text);}
+body.dark-theme .dropdown-item:hover,
+body.dark-theme .dropdown-item:focus{background-color:var(--srm-surface-2);color:var(--srm-accent);}
+body.dark-theme .dropdown-divider{border-color:var(--srm-border);}
+
+body.dark-theme .table{color:var(--srm-text);border-color:var(--srm-border);--bs-table-bg:transparent;}
+body.dark-theme .table>:not(caption)>*>*{
+  background-color:var(--srm-td-bg);
+  color:var(--srm-text);
+  border-color:var(--srm-border);
+}
+body.dark-theme .table thead th{background-color:var(--srm-th-bg)!important;color:var(--srm-th-text)!important;}
+body.dark-theme .table-hover>tbody>tr:hover>*{background-color:var(--srm-row-hover);color:var(--srm-text);}
+
+body.dark-theme .form-control,
+body.dark-theme .form-select{
+  background-color:var(--srm-input-bg);
+  border-color:var(--srm-input-border);
+  color:var(--srm-input-text);
+}
+body.dark-theme .form-control::placeholder{color:var(--srm-text-muted);}
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus{
+  background-color:var(--srm-input-bg);
+  border-color:var(--srm-accent);
+  color:var(--srm-input-text);
+  box-shadow:0 0 0 .2rem rgba(245,158,11,.25);
+}
+body.dark-theme .btn-close{filter:invert(1) grayscale(100%) brightness(200%);}
+body.dark-theme .btn-secondary{background-color:var(--srm-surface-2);border-color:var(--srm-border-strong);color:var(--srm-text);}
+body.dark-theme .spinner-border{color:var(--srm-accent)!important;}
+
+/* 브랜드색 버튼을 토큰으로 통일 (라이트/다크 자동 전환) */
+:root .btn-primary{background-color:var(--srm-accent)!important;border-color:var(--srm-accent)!important;color:var(--srm-accent-contrast)!important;}
+:root .btn-primary:hover,:root .btn-primary:focus,:root .btn-primary:active,:root .btn-primary.active{background-color:var(--srm-accent-hover)!important;border-color:var(--srm-accent-hover)!important;color:var(--srm-accent-contrast)!important;}
+:root .btn-outline-primary{color:var(--srm-accent)!important;border-color:var(--srm-accent)!important;background-color:transparent!important;}
+:root .btn-outline-primary:hover,:root .btn-outline-primary:focus,:root .btn-outline-primary:active,:root .btn-outline-primary.active{background-color:var(--srm-accent)!important;border-color:var(--srm-accent)!important;color:var(--srm-accent-contrast)!important;}
+:root .btn-link{color:var(--srm-accent);}
+:root .text-primary{color:var(--srm-accent)!important;}
+
+/* =====================================================================
+   4. 글로벌 헤더 (모든 모듈 공통) — 라이트 / 다크
+   ===================================================================== */
+#global-header{
+  flex-shrink:0;background-color:var(--srm-gnb-bg);min-height:50px;width:100%;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 40px;color:#fff;margin-bottom:20px;flex-wrap:wrap;gap:10px;
+  box-shadow:0 2px 4px rgba(0,0,0,.1);
+}
+#global-header .header-title{font-weight:700;font-size:1.1rem;color:#fff;}
+#global-header .module-title{color:var(--srm-gnb-title);font-weight:700;}
+#global-header .header-buttons{display:flex;align-items:center;gap:15px;flex-wrap:wrap;}
+#global-header .header-buttons .btn{font-size:.85rem;}
+#global-header .user-info-text{font-size:.9rem;font-weight:500;color:var(--srm-gnb-text);}
+#global-header .confidential-text{font-size:.9rem;font-weight:700;color:#FF5274;margin-left:15px;}
+#global-header .btn-outline-light{border-color:var(--srm-gnb-btn-border);color:var(--srm-gnb-text);}
+#global-header .btn-outline-light:hover{background-color:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.12);}
+#global-header .btn-icon-menu{display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;}
+#global-header .btn-icon-menu svg{width:22px;height:22px;}
+#global-header .btn-icon-menu::after{display:none;}
+#global-header .dropdown-item{font-size:.9rem;font-weight:700;}
+#global-header .dropdown-divider{margin:.3rem 0;border-color:var(--srm-border);}
+body.dark-theme #global-header{background-color:var(--srm-gnb-bg)!important;}
+body.dark-theme #global-header .module-title{color:var(--srm-gnb-title)!important;}
+body.dark-theme #global-header .user-info-text,
+body.dark-theme #global-header .user-info-text span,
+body.dark-theme #global-header #dynamic-user-name,
+body.dark-theme #global-header #dropdownMenuButton{color:var(--srm-gnb-text)!important;border-color:var(--srm-gnb-btn-border)!important;}
+
+/* =====================================================================
+   5. 공용 컴포넌트 (선택 채택) — 카드 / 세그먼트 컨트롤 / 지표 강조
+   ===================================================================== */
+.srm-card{background:var(--srm-surface);border:1px solid var(--srm-border);
+  border-radius:var(--srm-radius);box-shadow:var(--srm-shadow-md);}
+.srm-segmented{display:inline-flex;gap:2px;padding:3px;background:var(--srm-surface-2);
+  border:none;border-radius:999px;box-shadow:var(--srm-shadow-sm);}
+.srm-segmented button{border:none;background:transparent;color:var(--srm-text-muted);
+  font-weight:600;font-size:.82rem;line-height:1;padding:0 14px;height:29px;border-radius:999px;
+  cursor:pointer;transition:all .15s ease;white-space:nowrap;}
+.srm-segmented button:hover{color:var(--srm-text);}
+.srm-segmented button.is-active{background:var(--srm-accent);color:var(--srm-accent-contrast);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);}
+/* 리포트 표의 주요 지표 강조 (README §3-5) */
+.srm-metric{color:var(--srm-accent)!important;font-weight:700!important;}
+
+/* 다크 스크롤바 */
+body.dark-theme ::-webkit-scrollbar{width:10px;height:10px;}
+body.dark-theme ::-webkit-scrollbar-track{background:var(--srm-bg);}
+body.dark-theme ::-webkit-scrollbar-thumb{background:var(--srm-border-strong);border-radius:5px;}
+body.dark-theme ::-webkit-scrollbar-thumb:hover{background:var(--srm-text-muted);}
+body.dark-theme *{scrollbar-color:var(--srm-border-strong) var(--srm-bg);}
+
+/* =====================================================================
+   6. 전문 분석 사이트 톤 — 전역 마감(양 테마 공통, 레이아웃 영향 없음)
+   ===================================================================== */
+html{ -webkit-text-size-adjust:100%; }
+body{
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+}
+/* 숫자는 표·지표에서 자리 정렬(tabular) — 분석 화면 가독성 */
+table, .data-table, .exchange-table, .partner-detail-table,
+.srm-metric, [class*="val-"], [class*="-value"], [id*="sum-"]{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+}
+/* 선택 영역 · 포커스 링 — 브랜드 앰버 */
+::selection{ background:var(--srm-accent); color:var(--srm-accent-contrast); }
+body.dark-theme :focus-visible{ outline:2px solid var(--srm-accent); outline-offset:1px; }
+/* 라이트 스크롤바도 얇게(일관성) */
+:root:not(.dark-theme) ::-webkit-scrollbar{width:10px;height:10px;}
+:root:not(.dark-theme) ::-webkit-scrollbar-thumb{background:#c4ccd6;border-radius:5px;}
+:root:not(.dark-theme) ::-webkit-scrollbar-thumb:hover{background:#a9b3c0;}
+:root:not(.dark-theme) ::-webkit-scrollbar-track{background:#eef1f5;}
+
+/* 카드/패널 공통 미세 마감 — 얇은 테두리 + 절제된 그림자 (market-forecast 톤) */
+body.dark-theme .card,
+body.dark-theme .card-custom,
+body.dark-theme .modal-content{ box-shadow:none; }
+body.dark-theme hr{ border-color:var(--srm-border); opacity:1; }
+body.dark-theme .badge.bg-secondary{ background:var(--srm-surface-2)!important; color:var(--srm-text)!important; }
+body.dark-theme .spinner-border{ color:var(--srm-accent)!important; }
+/* 다크에서 밝은 회백 배경 인라인(#fdfefe/#fdfdfd/#f8f9fa/#f1f3f5/#ffffff) → 서피스 톤.
+   ※ #fff3cd(숫자필터 하이라이트) 같은 값과 충돌하지 않도록 완전 매칭만 대상 */
+body.dark-theme [style*="background:#ffffff"], body.dark-theme [style*="background: #ffffff"],
+body.dark-theme [style*="background-color:#ffffff"], body.dark-theme [style*="background-color: #ffffff"],
+body.dark-theme [style*="background:#fdfefe"], body.dark-theme [style*="background-color:#fdfefe"],
+body.dark-theme [style*="background:#fdfdfd"], body.dark-theme [style*="background-color:#fdfdfd"],
+body.dark-theme [style*="background:#f8f9fa"], body.dark-theme [style*="background-color:#f8f9fa"],
+body.dark-theme [style*="background:#f1f3f5"], body.dark-theme [style*="background-color:#f1f3f5"],
+body.dark-theme [style*="background:#f0f8ff"], body.dark-theme [style*="background-color:#f0f8ff"]{
+  background-color:var(--srm-surface-2)!important;
+}
+body.dark-theme [style*="rgba(255,255,255,0.8"],
+body.dark-theme [style*="rgba(255, 255, 255, 0.8"],
+body.dark-theme [style*="rgba(255,255,255,.8"],
+body.dark-theme [style*="rgba(255,255,255,0.85"]{ background-color:var(--srm-overlay)!important; }
+</style>
+<script>
+/* =====================================================================
+   6. 테마 컨트롤러 + 공용 프론트 헬퍼  (window.SRMTheme / window.SRM)
+   ===================================================================== */
+(function (w, d) {
+  var KEY = 'srm-theme';
+
+  function current(){ try { return localStorage.getItem(KEY) || 'light'; } catch (e) { return 'light'; } }
+
+  function apply(theme){
+    var dark = theme === 'dark';
+    if (d.body) d.body.classList.toggle('dark-theme', dark);
+    d.documentElement.classList.toggle('dark-theme', dark);
+    d.documentElement.setAttribute('data-srm-theme', dark ? 'dark' : 'light');
+    try { localStorage.setItem(KEY, dark ? 'dark' : 'light'); } catch (e) {}
+
+    /* 히어로 이미지 라이트/다크 스왑 (존재할 때만) */
+    var li = d.getElementById('hero-image-light'), da = d.getElementById('hero-image-dark');
+    if (li) li.style.display = dark ? 'none' : 'block';
+    if (da) da.style.display = dark ? 'block' : 'none';
+
+    /* 드롭다운 테마 토글 버튼 라벨 */
+    var tb = d.getElementById('theme-toggle-btn');
+    if (tb) tb.innerHTML = dark ? '테마설정: Light' : '테마설정: Dark';
+
+    /* 모듈(차트/지도 등)이 반응하도록 이벤트 발행 */
+    try { w.dispatchEvent(new CustomEvent('srm:themechange', { detail:{ theme: dark ? 'dark' : 'light' } })); } catch (e) {}
+  }
+
+  function toggle(){ apply(current() === 'dark' ? 'light' : 'dark'); }
+
+  w.SRMTheme = { apply: apply, toggle: toggle, get: current };
+  /* 하위호환 전역 (기존 header.html 들이 직접 호출) */
+  w.applyTheme = apply;
+  w.toggleTheme = toggle;
+
+  if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', function(){ apply(current()); });
+  else apply(current());
+
+  /* ---------------- 공용 헬퍼 : window.SRM ---------------- */
+  var SRM = w.SRM || {};
+
+  SRM.onThemeChange = function (cb){
+    w.addEventListener('srm:themechange', function (e){
+      try { cb(e.detail.theme); } catch (err) { console.error('[SRM.onThemeChange]', err); }
+    });
+  };
+
+  /* CSS 변수에서 현재 테마의 차트 색상 세트를 추출 */
+  SRM.chartTheme = function (){
+    var cs = getComputedStyle(d.documentElement);
+    var v = function (n){ return cs.getPropertyValue(n).trim(); };
+    return {
+      palette: [v('--srm-chart-1'), v('--srm-chart-2'), v('--srm-chart-3'),
+                v('--srm-chart-4'), v('--srm-chart-5'), v('--srm-chart-6')],
+      grid: v('--srm-chart-grid'), tick: v('--srm-chart-tick'),
+      accent: v('--srm-accent'), text: v('--srm-text'), surface: v('--srm-surface')
+    };
+  };
+
+  SRM.debounce = function (fn, wait){
+    var t; wait = wait || 150;
+    return function (){
+      var args = arguments, ctx = this;
+      clearTimeout(t);
+      t = setTimeout(function (){ fn.apply(ctx, args); }, wait);
+    };
+  };
+
+  SRM.escapeHtml = function (s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (m){
+      return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m];
+    });
+  };
+
+  SRM.formatNumber = function (n, dp){
+    var x = (typeof n === 'number') ? n : parseFloat(String(n).replace(/,/g, ''));
+    if (!isFinite(x)) return (n == null ? '' : String(n));
+    return x.toLocaleString('ko-KR', { maximumFractionDigits: dp == null ? 0 : dp });
+  };
+
+  SRM.formatCurrency = function (n, unit){
+    var s = SRM.formatNumber(n, 0);
+    return s + (unit ? ' ' + unit : '');
+  };
+
+  /* Date | 'yyyymmdd' | ISO 문자열 → 'yyyy-MM-dd' (withTime 시 시:분:초 추가) */
+  SRM.formatDateString = function (input, withTime){
+    if (input == null || input === '') return '';
+    var dt = (input instanceof Date) ? input : new Date(input);
+    if (isNaN(dt.getTime())) {
+      var m = String(input).replace(/[^0-9]/g, '');
+      if (m.length >= 8) dt = new Date(+m.slice(0,4), +m.slice(4,6) - 1, +m.slice(6,8));
+    }
+    if (isNaN(dt.getTime())) return String(input);
+    var p = function (x){ return String(x).padStart(2, '0'); };
+    var base = dt.getFullYear() + '-' + p(dt.getMonth() + 1) + '-' + p(dt.getDate());
+    return withTime ? base + ' ' + p(dt.getHours()) + ':' + p(dt.getMinutes()) + ':' + p(dt.getSeconds()) : base;
+  };
+
+  /* DocumentFragment 로 대량 행을 단일 리플로우로 주입 (README §4-2) */
+  SRM.renderRows = function (tbody, items, buildRow){
+    if (!tbody) return;
+    var frag = d.createDocumentFragment();
+    for (var i = 0; i < items.length; i++) {
+      var tr = buildRow(items[i], i);
+      if (tr) frag.appendChild(tr);
+    }
+    if (tbody.replaceChildren) tbody.replaceChildren(frag);
+    else { tbody.innerHTML = ''; tbody.appendChild(frag); }
+  };
+
+  /* 전역 에러 가드 — 특정 셀/모듈 손상 시에도 화면 전체가 멈추지 않도록 */
+  SRM.guard = function (fn, onErr){
+    try { return fn(); }
+    catch (e) {
+      console.error('[SRM.guard]', e);
+      if (typeof onErr === 'function') { try { onErr(e); } catch (_) {} }
+      return undefined;
+    }
+  };
+
+  w.SRM = SRM;
+})(window, document);
+</script>
