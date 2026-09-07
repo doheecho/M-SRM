@@ -835,12 +835,12 @@
           <table class="table table-bordered table-hover table-sm text-center mb-0 align-middle" id="dl-data-table" style="color: var(--srm-text) !important; font-size: 0.82rem !important; border-collapse: collapse;">
             <thead class="table-light" style="position: sticky; top: 0; z-index: 10;">
               <tr>
-                <th style="width: 8%; background-color: var(--srm-surface-2) !important;">날짜</th>
-                <th style="width: 15%; background-color: var(--srm-surface-2) !important;">소분류</th>
-                <th style="width: 8%; background-color: var(--srm-surface-2) !important;">위험도</th>
-                <th style="width: 41%; background-color: var(--srm-surface-2) !important; text-align: left; padding-left: 12px;">시황 세부 동향 및 리스크 리포트</th>
-                <th style="width: 14%; background-color: var(--srm-surface-2) !important;">연관 품목</th>
-                <th style="width: 14%; background-color: var(--srm-surface-2) !important;">연관 벤더</th>
+                <th style="width: 5%; background-color: var(--srm-surface-2) !important;">날짜</th>
+                <th style="width: 5%; background-color: var(--srm-surface-2) !important;">위험도</th>
+                <th style="width: 20%; background-color: var(--srm-surface-2) !important;">리포트 주제</th>
+                <th style="width: 50%; background-color: var(--srm-surface-2) !important;">리포트 세부 내용</th>
+                <th style="width: 10%; background-color: var(--srm-surface-2) !important;">연관 품목</th>
+                <th style="width: 10%; background-color: var(--srm-surface-2) !important;">연관 벤더</th>
               </tr>
             </thead>
             <tbody id="dl-data-tbody">
@@ -4149,13 +4149,13 @@
     // ===== 조달 · 납기 (GitHub Data Lake View Module) =====
     const DL_REPORTS = {
       theme: [
-        { value: "leadtime_risk", label: "🚚 조달/납기 & 리드타임 위험" },
-        { value: "high_risk_dashboard", label: "⚠️ 초고위험 요약 대시보드" },
-        { value: "eol_tracker", label: "🚫 단종 & LTB 추적기" },
-        { value: "price_alerts", label: "💰 가격 변동 경보" },
-        { value: "disaster_and_accidents", label: "💥 자연재해 & 설비사고/결함" },
-        { value: "geopolitics_and_tariffs", label: "🌐 지정학적 규제 & 관세" },
-        { value: "corporate_actions", label: "🏢 기업 M&A & 감산/증산 계획" }
+        { value: "leadtime_risk", label: "조달/납기 변동" },
+        { value: "high_risk_dashboard", label: "고위험군 종합" },
+        { value: "eol_tracker", label: "EOL" },
+        { value: "price_alerts", label: "가격 변동" },
+        { value: "disaster_and_accidents", label: "자연재해/사고" },
+        { value: "geopolitics_and_tariffs", label: "지정학적 이슈/관세" },
+        { value: "corporate_actions", label: "M&A 및 감산/증산" }
       ],
       category: [
         { value: "ic", label: "IC" },
@@ -4226,7 +4226,7 @@
       // Populate Selector with "All (전체)" prepended as the very first option!
       const selector = document.getElementById("dl-report-selector");
       if (selector) {
-        const allOption = `<option value="all">🌟 전체 (All - 전체 시황)</option>`;
+        const allOption = `<option value="all">전체</option>`;
         const otherOptions = DL_REPORTS[type].map(item => `<option value="${item.value}">${item.label}</option>`).join("");
         selector.innerHTML = allOption + otherOptions;
       }
@@ -4264,7 +4264,7 @@
             <tr>
               <td colspan="6" class="text-primary py-5 fw-bold" style="background: var(--srm-surface) !important;">
                 <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                깃허브 데이터 레이크에서 [master/master_all.json] 전체 시황 원장 페칭 중...
+                외부 서버에서 [master/master_all.json] 전체 시황 데이터를 불러오는 중...
               </td>
             </tr>
           `;
@@ -4278,7 +4278,7 @@
             <tr>
               <td colspan="6" class="text-primary py-5 fw-bold" style="background: var(--srm-surface) !important;">
                 <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                깃허브 데이터 레이크에서 [by_${type}/${selected}.json] 리포트 페칭 중...
+                외부 서버에서 [by_${type}/${selected}.json] 시장 전망 리포트를 불러오는 중...
               </td>
             </tr>
           `;
@@ -4388,8 +4388,8 @@
         return `
           <tr>
             <td style="font-variant-numeric: tabular-nums; font-weight: 600;">${formattedDate}</td>
-            <td class="text-start ps-3 text-secondary fw-semibold">${escapeHtml(r.subheading || '-')}</td>
             <td>${riskBadge}</td>
+            <td class="text-start ps-3 text-secondary fw-semibold">${escapeHtml(r.subheading || '-')}</td>
             <td class="text-start ps-3 py-2" style="white-space: normal; line-height: 1.45; vertical-align: top;">${escapeHtml(r.text)}</td>
             <td class="py-2" style="white-space: normal; vertical-align: middle;">${catsHtml || '<span class="text-muted">-</span>'}</td>
             <td class="py-2" style="white-space: normal; vertical-align: middle;">${vendorTags || '<span class="text-muted">-</span>'}</td>
@@ -4505,8 +4505,8 @@
          return;
        }
        
-       // Sort records chronologically (year/month ascending)
-       const sorted = [...records].sort((a, b) => (a.year - b.year) || (a.month - b.month));
+       // Sort records chronologically (year/month descending, most recent first)
+       const sorted = [...records].sort((a, b) => (b.year - a.year) || (b.month - a.month));
        
        container.innerHTML = sorted.map((r, idx) => {
          const formattedDate = `${r.year}년 ${r.month}월`;
@@ -4515,12 +4515,35 @@
          if (r.risk_level === "High") markerColor = "#be123c";
          else if (r.risk_level === "Medium") markerColor = "#f59e0b";
          
-         let summary = r.subheading || "";
-         if (summary) {
+         let summary = (r.subheading || "").trim();
+         
+         // 소제목이 있고 충분히 긴 글자인 경우 소제목 사용 (불필요한 숫자 기호 제거)
+         if (summary && summary !== "-" && summary.length > 2) {
            summary = summary.replace(/^\d+[\s\.\,\-\_]*/, "");
          } else {
-           summary = r.text.split(".")[0] + ".";
-           summary = summary.replace(/^\d+[\s\.\,\-\_]*/, "");
+           // 약어나 단락 분절 온점(.) 오작동을 차단하기 위한 고성능 첫문장 파서
+           let rawText = (r.text || "").trim();
+           // 혹시 모를 글머리 기호 제거
+           rawText = rawText.replace(/^[\-\*\•\s]+/, "");
+           
+           let firstSentence = rawText.split(/[.\n]/)[0].trim();
+           
+           // 문장이 영어 약어(U.S. 등) 온점으로 인해 너무 짧게 잘린 경우, 첫 65글자를 잘라내어 우아하게 표출
+           if (firstSentence.length < 6 || firstSentence.length > 100) {
+             firstSentence = rawText.substring(0, 65).trim();
+             if (rawText.length > 65) {
+               firstSentence += "...";
+             }
+           } else {
+             firstSentence += ".";
+           }
+           
+           summary = firstSentence.replace(/^\d+[\s\.\,\-\_]*/, "").trim();
+         }
+         
+         // 최종 방어막: 혹시라도 소제목이 공란이거나 글자가 깨진 경우 깔끔한 기본 타이틀로 치환
+         if (!summary || summary.length < 2) {
+           summary = "SCM 시황 분석 및 세부 리포트";
          }
          
          const vendors = (r.detected_vendors || []).map(v => 
